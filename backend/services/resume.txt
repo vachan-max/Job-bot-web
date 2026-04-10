@@ -1,0 +1,24 @@
+Vachan Shetty
+AI Engineer
+Bangalore, India | +91-XXXXXXXXXX | vachan@example.com
+Summary
+AI Engineer with strong foundation in machine learning, deep learning, and backend development.
+Experience building AI-powered automation tools, NLP pipelines, and scalable APIs.
+Skills
+
+Programming: Python, JavaScript
+AI/ML: TensorFlow, PyTorch, Scikit-learn
+NLP: Transformers, HuggingFace, spaCy
+Backend: FastAPI, Node.js
+Database: PostgreSQL, Firebase
+Tools: Docker, Git, Linux
+Projects
+AI Job Recommendation Bot – Built WhatsApp-based AI job recommendation system using
+FastAPI and NLP scoring.
+Resume Analyzer – Extracted skills and calculated job fit using cosine similarity.
+LLM Chatbot – Created conversational assistant integrated with API backend.
+Education
+B.Tech in Computer Science – XYZ Engineering College (2021–2025)
+Experience
+AI Engineer Intern – TechAI Solutions (2024)
+Developed ML models, built FastAPI endpoints, and improved model accuracy.

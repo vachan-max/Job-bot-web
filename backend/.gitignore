@@ -1,0 +1,8 @@
+venv/
+.env
+serviceAccountKey.json
+__pycache__/
+*.pyc
+gemini\
+.resume.pdf
+
