@@ -3,7 +3,5 @@ venv/
 serviceAccountKey.json
 __pycache__/
 *.pyc
-gemini\
-.resume.pdf
+resume.pdf
 .gemini/
-
