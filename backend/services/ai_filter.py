@@ -7,8 +7,8 @@ load_dotenv()
 
 client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
-# load resume once when module starts — avoids re-reading on every job
 _resume_text = None
+
 
 def get_resume() -> str:
     global _resume_text
@@ -22,7 +22,6 @@ def get_resume() -> str:
 
 
 def _ask_groq(prompt: str, max_tokens: int = 5) -> str:
-    """Single reusable Groq call — returns raw text response."""
     response = client.chat.completions.create(
         model       = "llama-3.3-70b-versatile",
         messages    = [{"role": "user", "content": prompt}],
@@ -33,7 +32,6 @@ def _ask_groq(prompt: str, max_tokens: int = 5) -> str:
 
 
 def _parse_score(raw: str, default: int = 60) -> int:
-    """Safely extract a 0-100 integer from Groq's response."""
     digits = "".join(filter(str.isdigit, raw))
     if not digits:
         return default
@@ -41,18 +39,11 @@ def _parse_score(raw: str, default: int = 60) -> int:
 
 
 def score_job(job: dict, preferences: dict) -> dict:
-    """
-    Scores a job on two dimensions:
-      1. ai_score    — how well the job matches candidate preferences
-      2. match_percent — how well the job matches the actual resume text
-    Both use separate Groq calls so the numbers are independent.
-    """
-
     title       = job.get("job_title", "")
     company     = job.get("company", "")
     description = job.get("description", "")[:400]
 
-    # ── 1. Preference match score ─────────────────────────────────────────
+    # 1. Preference match score
     pref_prompt = f"""You are a job matching AI. Score this job from 0-100.
 
 Candidate wants : {preferences.get('job_title')} role
@@ -67,21 +58,21 @@ Scoring guide:
 85-100 = excellent match (same role, matching skills, right experience level)
 70-84  = good match (similar role, most skills match)
 50-69  = partial match (related role, some skills overlap)
-0-49   = poor match (different role or experience level)
+0-49   = poor match
 
 Reply with ONLY a number 0-100. Nothing else."""
 
     try:
-        raw_pref  = _ask_groq(pref_prompt)
-        ai_score  = _parse_score(raw_pref, default=60)
-        print(f"[ai_filter] '{title}' at '{company}' → AI score: {ai_score}")
+        raw_pref = _ask_groq(pref_prompt)
+        ai_score = _parse_score(raw_pref, default=60)
+        print(f"[ai_filter] '{title}' at '{company}' -> AI score: {ai_score}")
     except Exception as e:
         print(f"[ai_filter] AI score error for '{title}': {e}")
         ai_score = 60
 
     job["ai_score"] = ai_score
 
-    # ── 2. Resume match score ─────────────────────────────────────────────
+    # 2. Resume match score
     resume_text = get_resume()
 
     if not resume_text:
@@ -108,7 +99,7 @@ Reply with ONLY a number 0-100. Nothing else."""
     try:
         raw_match     = _ask_groq(resume_prompt)
         match_percent = _parse_score(raw_match, default=50)
-        print(f"[ai_filter] '{title}' → Resume match: {match_percent}%")
+        print(f"[ai_filter] '{title}' -> Resume match: {match_percent}%")
     except Exception as e:
         print(f"[ai_filter] Resume match error for '{title}': {e}")
         match_percent = 50
@@ -118,10 +109,6 @@ Reply with ONLY a number 0-100. Nothing else."""
 
 
 def filter_jobs(jobs: list, preferences: dict) -> list:
-    """
-    Scores all jobs and filters by min_score.
-    Returns empty list if nothing passes — no forced fallback.
-    """
     min_score = int(preferences.get("min_score", 70))
 
     print(f"[ai_filter] Scoring {len(jobs)} jobs, min_score={min_score}")

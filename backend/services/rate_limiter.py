@@ -1,20 +1,14 @@
 from datetime import datetime, timedelta
 from config import rate_limits_col
 
-# ── Define limits ─────────────────────────────────────────────────────────────
 LIMITS = {
-    "jsearch": {"daily": 3,  "weekly": 15},
-    "groq"   : {"daily": 20, "weekly": 100},
-    "twilio" : {"daily": 10, "weekly": 50},
+    "jsearch": {"daily": 70,  "weekly": 50},
+    "groq"   : {"daily": 180, "weekly": 300},
+    "twilio" : {"daily": 80, "weekly": 600},
 }
 
 
 async def check_and_increment(service: str, cost: int = 1) -> dict:
-    """
-    Checks if service is within daily and weekly limits.
-    If yes, increments counter and returns {"allowed": True}.
-    If no, returns {"allowed": False, "reason": "..."}.
-    """
     now        = datetime.utcnow()
     today      = now.strftime("%Y-%m-%d")
     week_start = (now - timedelta(days=now.weekday())).strftime("%Y-%m-%d")
@@ -59,7 +53,6 @@ async def check_and_increment(service: str, cost: int = 1) -> dict:
 
 
 async def get_usage() -> dict:
-    """Returns current usage for all services."""
     now        = datetime.utcnow()
     today      = now.strftime("%Y-%m-%d")
     week_start = (now - timedelta(days=now.weekday())).strftime("%Y-%m-%d")
@@ -75,7 +68,6 @@ async def get_usage() -> dict:
             "weekly_limit": limits["weekly"],
         }
 
-    # fill in zeros for services not yet used
     for service, limits in LIMITS.items():
         if service not in usage:
             usage[service] = {

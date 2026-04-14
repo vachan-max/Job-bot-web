@@ -50,6 +50,11 @@ const IconEmpty = () => (
     <polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/>
   </svg>
 );
+const IconTrash = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+  </svg>
+);
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
 function scoreColor(s) {
@@ -78,16 +83,19 @@ function formatDate(dateStr) {
     timeZone : "Asia/Kolkata",
   });
 }
+
 // ─── main component ───────────────────────────────────────────────────────────
 export default function History() {
   const navigate = useNavigate();
 
-  const [jobs, setJobs]           = useState([]);
-  const [loading, setLoading]     = useState(true);
-  const [search, setSearch]       = useState("");
-  const [filterScore, setFilterScore] = useState("all"); // all | high | medium | low
-  const [expanded, setExpanded]   = useState(null); // job index expanded for cover letter
-  const [sortBy, setSortBy]       = useState("date"); // date | score | match
+  const [jobs,        setJobs]        = useState([]);
+  const [loading,     setLoading]     = useState(true);
+  const [search,      setSearch]      = useState("");
+  const [filterScore, setFilterScore] = useState("all");
+  const [expanded,    setExpanded]    = useState(null);
+  const [sortBy,      setSortBy]      = useState("date");
+  const [deletingId,  setDeletingId]  = useState(null);
+  const [clearingAll, setClearingAll] = useState(false);
 
   useEffect(() => { fetchHistory(); }, []);
 
@@ -108,6 +116,34 @@ export default function History() {
     }
   }
 
+  // ─── delete one ───────────────────────────────────────────────────────────
+  async function handleDeleteOne(alertId) {
+    if (!window.confirm("Remove this job from history?")) return;
+    try {
+      setDeletingId(alertId);
+      await api.delete(`/jobs/history/${alertId}`);
+      setJobs(prev => prev.filter(j => j._id !== alertId));
+    } catch (err) {
+      alert("Failed to delete. Try again.");
+    } finally {
+      setDeletingId(null);
+    }
+  }
+
+  // ─── clear all ────────────────────────────────────────────────────────────
+  async function handleClearAll() {
+    if (!window.confirm("Delete your entire job history? This cannot be undone.")) return;
+    try {
+      setClearingAll(true);
+      await api.delete("/jobs/history/all");
+      setJobs([]);
+    } catch (err) {
+      alert("Failed to clear history. Try again.");
+    } finally {
+      setClearingAll(false);
+    }
+  }
+
   // ─── filter + search + sort ───────────────────────────────────────────────
   const filtered = jobs
     .filter(j => {
@@ -116,7 +152,6 @@ export default function History() {
         (j.job_title || j.title || "").toLowerCase().includes(q) ||
         (j.company || "").toLowerCase().includes(q) ||
         (j.location || "").toLowerCase().includes(q);
-
       const s = j.ai_score ?? 0;
       const matchFilter =
         filterScore === "all"    ? true :
@@ -132,9 +167,7 @@ export default function History() {
     });
 
   // ─── stats ────────────────────────────────────────────────────────────────
-  const avgScore = jobs.length
-    ? Math.round(jobs.reduce((s, j) => s + (j.ai_score ?? 0), 0) / jobs.length)
-    : 0;
+  const avgScore    = jobs.length ? Math.round(jobs.reduce((s, j) => s + (j.ai_score ?? 0), 0) / jobs.length) : 0;
   const highMatches = jobs.filter(j => (j.ai_score ?? 0) >= 85).length;
 
   // ─── render ───────────────────────────────────────────────────────────────
@@ -148,6 +181,8 @@ export default function History() {
         .job-row { animation: fadeUp .3s ease both; transition: box-shadow .2s, border-color .2s; }
         .job-row:hover { border-color: rgba(99,102,241,.35) !important; box-shadow: 0 4px 16px rgba(99,102,241,.07) !important; }
         .apply-btn:hover { background: #4f46e5 !important; transform: translateY(-1px); }
+        .delete-btn:hover { background: rgba(239,68,68,.08) !important; border-color: #ef4444 !important; }
+        .clear-btn:hover:not(:disabled) { background: rgba(239,68,68,.08) !important; }
         .filter-btn { cursor:pointer; transition: all .15s; }
         .filter-btn:hover { border-color: #6366f1 !important; color: #6366f1 !important; }
         .filter-btn.active { background: #6366f1 !important; color: #fff !important; border-color: #6366f1 !important; }
@@ -176,9 +211,9 @@ export default function History() {
         {/* ── stats row ── */}
         <div style={styles.statsRow}>
           {[
-            { label: "Total alerts sent", value: jobs.length },
-            { label: "Avg AI score",      value: jobs.length ? `${avgScore}` : "—" },
-            { label: "High matches (85+)", value: highMatches },
+            { label: "Total alerts sent",  value: jobs.length },
+            { label: "Avg AI score",        value: jobs.length ? `${avgScore}` : "—" },
+            { label: "High matches (85+)",  value: highMatches },
           ].map((s, i) => (
             <div key={i} style={styles.statCard}>
               <span style={styles.statVal}>{s.value}</span>
@@ -232,6 +267,32 @@ export default function History() {
             <option value="score">Sort: AI Score</option>
             <option value="match">Sort: Match %</option>
           </select>
+
+          {/* clear all */}
+          <button
+            className="clear-btn"
+            onClick={handleClearAll}
+            disabled={clearingAll || jobs.length === 0}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 6,
+              padding: "8px 14px",
+              borderRadius: 10,
+              border: "1.5px solid rgba(239,68,68,.3)",
+              background: "transparent",
+              color: "#ef4444",
+              fontSize: 13,
+              fontFamily: "'DM Sans', sans-serif",
+              cursor: (clearingAll || jobs.length === 0) ? "not-allowed" : "pointer",
+              fontWeight: 500,
+              opacity: (clearingAll || jobs.length === 0) ? 0.5 : 1,
+              transition: "all .2s",
+            }}
+          >
+            <IconTrash />
+            {clearingAll ? "Clearing..." : "Clear All"}
+          </button>
         </div>
 
         {/* ── result count ── */}
@@ -266,14 +327,14 @@ export default function History() {
         ) : (
           <div style={styles.list}>
             {filtered.map((job, i) => {
-              const sc   = scoreColor(job.ai_score ?? 0);
-              const isEx = expanded === i;
+              const sc    = scoreColor(job.ai_score ?? 0);
+              const isEx  = expanded === i;
               const title = job.job_title || job.title || "Job";
               const delay = `${Math.min(i * 0.04, 0.4)}s`;
 
               return (
                 <div
-                  key={i}
+                  key={job._id || i}
                   className="job-row"
                   style={{ ...styles.jobRow, animationDelay: delay }}
                 >
@@ -284,12 +345,10 @@ export default function History() {
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={styles.jobTitleRow}>
                         <h3 style={styles.jobTitle}>{title}</h3>
-                        {/* score pill */}
                         <span style={{ ...styles.scorePill, background: sc.bg, color: sc.text, border: `1px solid ${sc.border}` }}>
                           {job.ai_score ?? "—"}
                         </span>
                       </div>
-
                       <div style={styles.metaRow}>
                         {job.company && (
                           <span style={styles.metaItem}><IconBriefcase />{job.company}</span>
@@ -303,7 +362,7 @@ export default function History() {
                       </div>
                     </div>
 
-                    {/* right: match % + apply */}
+                    {/* right: match % + apply + delete */}
                     <div style={styles.jobActions}>
                       {job.match_percent != null && (
                         <div style={styles.matchWrap}>
@@ -337,6 +396,32 @@ export default function History() {
                           <IconLink /> Apply
                         </a>
                       )}
+
+                      {/* delete button */}
+                      <button
+                        className="delete-btn"
+                        onClick={() => handleDeleteOne(job._id)}
+                        disabled={deletingId === job._id}
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 4,
+                          padding: "7px 10px",
+                          borderRadius: 8,
+                          border: "1.5px solid rgba(239,68,68,.25)",
+                          background: "transparent",
+                          color: "#ef4444",
+                          fontSize: 12,
+                          fontWeight: 500,
+                          fontFamily: "'DM Sans', sans-serif",
+                          cursor: deletingId === job._id ? "not-allowed" : "pointer",
+                          opacity: deletingId === job._id ? 0.5 : 1,
+                          transition: "all .2s",
+                          flexShrink: 0,
+                        }}
+                      >
+                        {deletingId === job._id ? "..." : <><IconTrash /> Remove</>}
+                      </button>
                     </div>
                   </div>
 
@@ -375,283 +460,41 @@ export default function History() {
 
 // ─── styles ───────────────────────────────────────────────────────────────────
 const styles = {
-  root: {
-    minHeight: "100vh",
-    background: "#f8f9fc",
-    fontFamily: "'DM Sans', sans-serif",
-    color: "#111827",
-  },
-  nav: {
-    background: "#fff",
-    borderBottom: "1px solid #e5e7eb",
-    position: "sticky",
-    top: 0,
-    zIndex: 10,
-  },
-  navInner: {
-    maxWidth: 1100,
-    margin: "0 auto",
-    padding: "0 24px",
-    height: 60,
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-  backBtn: {
-    display: "flex",
-    alignItems: "center",
-    gap: 6,
-    padding: "6px 12px",
-    borderRadius: 8,
-    border: "none",
-    background: "transparent",
-    color: "#6b7280",
-    fontSize: 14,
-    fontFamily: "'DM Sans', sans-serif",
-    cursor: "pointer",
-    minWidth: 120,
-  },
-  logo: {
-    fontFamily: "'Syne', sans-serif",
-    fontWeight: 700,
-    fontSize: 20,
-    color: "#111827",
-  },
-  main: {
-    maxWidth: 1100,
-    margin: "0 auto",
-    padding: "32px 24px",
-  },
-  statsRow: {
-    display: "grid",
-    gridTemplateColumns: "repeat(3, 1fr)",
-    gap: 16,
-    marginBottom: 28,
-  },
-  statCard: {
-    background: "#fff",
-    border: "1px solid #e5e7eb",
-    borderRadius: 14,
-    padding: "20px 24px",
-    display: "flex",
-    flexDirection: "column",
-    gap: 4,
-  },
-  statVal: {
-    fontFamily: "'Syne', sans-serif",
-    fontSize: 32,
-    fontWeight: 700,
-    color: "#111827",
-    letterSpacing: "-1px",
-  },
-  statLabel: {
-    fontSize: 13,
-    color: "#6b7280",
-  },
-  toolbar: {
-    display: "flex",
-    alignItems: "center",
-    gap: 12,
-    marginBottom: 16,
-    flexWrap: "wrap",
-  },
-  searchWrap: {
-    position: "relative",
-    flex: 1,
-    minWidth: 220,
-  },
-  searchIcon: {
-    position: "absolute",
-    left: 12,
-    top: "50%",
-    transform: "translateY(-50%)",
-    color: "#9ca3af",
-    display: "flex",
-  },
-  searchInput: {
-    width: "100%",
-    padding: "9px 14px 9px 36px",
-    borderRadius: 10,
-    border: "1.5px solid #e5e7eb",
-    fontSize: 14,
-    fontFamily: "'DM Sans', sans-serif",
-    background: "#fff",
-    color: "#111827",
-    transition: "border-color .2s, box-shadow .2s",
-    outline: "none",
-  },
-  filterGroup: {
-    display: "flex",
-    alignItems: "center",
-    gap: 6,
-    fontSize: 13,
-    color: "#6b7280",
-  },
-  filterBtn: {
-    padding: "6px 12px",
-    borderRadius: 8,
-    border: "1.5px solid #e5e7eb",
-    background: "#fff",
-    color: "#6b7280",
-    fontSize: 13,
-    fontFamily: "'DM Sans', sans-serif",
-    fontWeight: 500,
-  },
-  sortSelect: {
-    padding: "8px 12px",
-    borderRadius: 10,
-    border: "1.5px solid #e5e7eb",
-    background: "#fff",
-    color: "#374151",
-    fontSize: 13,
-    fontFamily: "'DM Sans', sans-serif",
-    cursor: "pointer",
-  },
-  resultCount: {
-    fontSize: 13,
-    color: "#9ca3af",
-    marginBottom: 16,
-  },
-  loadingState: {
-    display: "flex",
-    alignItems: "center",
-    gap: 10,
-    color: "#9ca3af",
-    fontSize: 15,
-    padding: "60px 0",
-    justifyContent: "center",
-  },
-  emptyState: {
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "center",
-    padding: "80px 0",
-    textAlign: "center",
-  },
-  goBtn: {
-    marginTop: 20,
-    padding: "10px 24px",
-    borderRadius: 10,
-    border: "none",
-    background: "#6366f1",
-    color: "#fff",
-    fontSize: 14,
-    fontFamily: "'DM Sans', sans-serif",
-    cursor: "pointer",
-    fontWeight: 500,
-  },
-  list: {
-    display: "flex",
-    flexDirection: "column",
-    gap: 12,
-  },
-  jobRow: {
-    background: "#fff",
-    border: "1px solid #e5e7eb",
-    borderRadius: 14,
-    padding: "20px 24px",
-    boxShadow: "0 1px 3px rgba(0,0,0,.04)",
-  },
-  jobTop: {
-    display: "flex",
-    alignItems: "flex-start",
-    gap: 16,
-  },
-  jobTitleRow: {
-    display: "flex",
-    alignItems: "center",
-    gap: 10,
-    marginBottom: 8,
-    flexWrap: "wrap",
-  },
-  jobTitle: {
-    fontFamily: "'Syne', sans-serif",
-    fontSize: 17,
-    fontWeight: 700,
-    color: "#111827",
-  },
-  scorePill: {
-    fontSize: 12,
-    fontWeight: 600,
-    padding: "2px 10px",
-    borderRadius: 99,
-    fontFamily: "'Syne', sans-serif",
-  },
-  metaRow: {
-    display: "flex",
-    flexWrap: "wrap",
-    gap: 12,
-  },
-  metaItem: {
-    display: "flex",
-    alignItems: "center",
-    gap: 5,
-    fontSize: 13,
-    color: "#6b7280",
-  },
-  jobActions: {
-    display: "flex",
-    alignItems: "center",
-    gap: 14,
-    flexShrink: 0,
-  },
-  matchWrap: {
-    position: "relative",
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "center",
-    gap: 2,
-  },
-  matchLabel: {
-    fontSize: 10,
-    color: "#9ca3af",
-    textAlign: "center",
-  },
-  applyBtn: {
-    display: "flex",
-    alignItems: "center",
-    gap: 6,
-    padding: "8px 16px",
-    borderRadius: 9,
-    background: "#6366f1",
-    color: "#fff",
-    fontSize: 13,
-    fontWeight: 500,
-    textDecoration: "none",
-    transition: "all .2s",
-  },
-  skillsGap: {
-    display: "flex",
-    alignItems: "center",
-    flexWrap: "wrap",
-    gap: 6,
-    marginTop: 12,
-    paddingTop: 12,
-    borderTop: "1px solid #f3f4f6",
-  },
-  skillsLabel: {
-    fontSize: 12,
-    color: "#9ca3af",
-    fontWeight: 500,
-  },
-  skillTag: {
-    padding: "2px 10px",
-    borderRadius: 99,
-    background: "rgba(99,102,241,.08)",
-    color: "#6366f1",
-    fontSize: 12,
-    fontWeight: 500,
-    border: "1px solid rgba(99,102,241,.2)",
-  },
-  expandBtn: {
-    marginTop: 12,
-    background: "none",
-    border: "none",
-    color: "#9ca3af",
-    fontSize: 12,
-    cursor: "pointer",
-    fontFamily: "'DM Sans', sans-serif",
-    padding: 0,
-    transition: "color .2s",
-  },
+  root: { minHeight: "100vh", background: "#f8f9fc", fontFamily: "'DM Sans', sans-serif", color: "#111827" },
+  nav: { background: "#fff", borderBottom: "1px solid #e5e7eb", position: "sticky", top: 0, zIndex: 10 },
+  navInner: { maxWidth: 1100, margin: "0 auto", padding: "0 24px", height: 60, display: "flex", alignItems: "center", justifyContent: "space-between" },
+  backBtn: { display: "flex", alignItems: "center", gap: 6, padding: "6px 12px", borderRadius: 8, border: "none", background: "transparent", color: "#6b7280", fontSize: 14, fontFamily: "'DM Sans', sans-serif", cursor: "pointer", minWidth: 120 },
+  logo: { fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: 20, color: "#111827" },
+  main: { maxWidth: 1100, margin: "0 auto", padding: "32px 24px" },
+  statsRow: { display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16, marginBottom: 28 },
+  statCard: { background: "#fff", border: "1px solid #e5e7eb", borderRadius: 14, padding: "20px 24px", display: "flex", flexDirection: "column", gap: 4 },
+  statVal: { fontFamily: "'Syne', sans-serif", fontSize: 32, fontWeight: 700, color: "#111827", letterSpacing: "-1px" },
+  statLabel: { fontSize: 13, color: "#6b7280" },
+  toolbar: { display: "flex", alignItems: "center", gap: 12, marginBottom: 16, flexWrap: "wrap" },
+  searchWrap: { position: "relative", flex: 1, minWidth: 220 },
+  searchIcon: { position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "#9ca3af", display: "flex" },
+  searchInput: { width: "100%", padding: "9px 14px 9px 36px", borderRadius: 10, border: "1.5px solid #e5e7eb", fontSize: 14, fontFamily: "'DM Sans', sans-serif", background: "#fff", color: "#111827", transition: "border-color .2s, box-shadow .2s", outline: "none" },
+  filterGroup: { display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: "#6b7280" },
+  filterBtn: { padding: "6px 12px", borderRadius: 8, border: "1.5px solid #e5e7eb", background: "#fff", color: "#6b7280", fontSize: 13, fontFamily: "'DM Sans', sans-serif", fontWeight: 500 },
+  sortSelect: { padding: "8px 12px", borderRadius: 10, border: "1.5px solid #e5e7eb", background: "#fff", color: "#374151", fontSize: 13, fontFamily: "'DM Sans', sans-serif", cursor: "pointer" },
+  resultCount: { fontSize: 13, color: "#9ca3af", marginBottom: 16 },
+  loadingState: { display: "flex", alignItems: "center", gap: 10, color: "#9ca3af", fontSize: 15, padding: "60px 0", justifyContent: "center" },
+  emptyState: { display: "flex", flexDirection: "column", alignItems: "center", padding: "80px 0", textAlign: "center" },
+  goBtn: { marginTop: 20, padding: "10px 24px", borderRadius: 10, border: "none", background: "#6366f1", color: "#fff", fontSize: 14, fontFamily: "'DM Sans', sans-serif", cursor: "pointer", fontWeight: 500 },
+  list: { display: "flex", flexDirection: "column", gap: 12 },
+  jobRow: { background: "#fff", border: "1px solid #e5e7eb", borderRadius: 14, padding: "20px 24px", boxShadow: "0 1px 3px rgba(0,0,0,.04)" },
+  jobTop: { display: "flex", alignItems: "flex-start", gap: 16 },
+  jobTitleRow: { display: "flex", alignItems: "center", gap: 10, marginBottom: 8, flexWrap: "wrap" },
+  jobTitle: { fontFamily: "'Syne', sans-serif", fontSize: 17, fontWeight: 700, color: "#111827" },
+  scorePill: { fontSize: 12, fontWeight: 600, padding: "2px 10px", borderRadius: 99, fontFamily: "'Syne', sans-serif" },
+  metaRow: { display: "flex", flexWrap: "wrap", gap: 12 },
+  metaItem: { display: "flex", alignItems: "center", gap: 5, fontSize: 13, color: "#6b7280" },
+  jobActions: { display: "flex", alignItems: "center", gap: 10, flexShrink: 0 },
+  matchWrap: { position: "relative", display: "flex", flexDirection: "column", alignItems: "center", gap: 2 },
+  matchLabel: { fontSize: 10, color: "#9ca3af", textAlign: "center" },
+  applyBtn: { display: "flex", alignItems: "center", gap: 6, padding: "8px 16px", borderRadius: 9, background: "#6366f1", color: "#fff", fontSize: 13, fontWeight: 500, textDecoration: "none", transition: "all .2s" },
+  skillsGap: { display: "flex", alignItems: "center", flexWrap: "wrap", gap: 6, marginTop: 12, paddingTop: 12, borderTop: "1px solid #f3f4f6" },
+  skillsLabel: { fontSize: 12, color: "#9ca3af", fontWeight: 500 },
+  skillTag: { padding: "2px 10px", borderRadius: 99, background: "rgba(99,102,241,.08)", color: "#6366f1", fontSize: 12, fontWeight: 500, border: "1px solid rgba(99,102,241,.2)" },
+  expandBtn: { marginTop: 12, background: "none", border: "none", color: "#9ca3af", fontSize: 12, cursor: "pointer", fontFamily: "'DM Sans', sans-serif", padding: 0, transition: "color .2s" },
 };

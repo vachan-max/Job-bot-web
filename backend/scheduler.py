@@ -1,18 +1,22 @@
-import asyncio
 import os
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
-from config import users_col, preferences_col, job_alerts_col
+from config import users_col, preferences_col, job_alerts_col, job_links_col
 from services.job_fetcher import fetch_jobs
 from services.ai_filter import filter_jobs
 from services.cover_letter import generate_cover_letter
 from services.whatsapp_sender import send_whatsapp
+from services.rate_limiter import check_and_increment
+
+IST = timezone(timedelta(hours=5, minutes=30))
 
 
 async def cleanup_old_alerts():
-    cutoff = datetime.utcnow() - timedelta(days=2)
-    result = await job_alerts_col.delete_many({"sent_at": {"$lt": cutoff}})
-    print(f"[scheduler] Deleted {result.deleted_count} alerts older than 6 days")
+    cutoff_alerts = datetime.utcnow() - timedelta(days=6)
+    cutoff_links  = datetime.utcnow() - timedelta(days=30)
+    r1 = await job_alerts_col.delete_many({"sent_at": {"$lt": cutoff_alerts}})
+    r2 = await job_links_col.delete_many({"sent_at":  {"$lt": cutoff_links}})
+    print(f"[scheduler] Deleted {r1.deleted_count} alerts (6d) | {r2.deleted_count} links (30d)")
 
 
 async def run_for_user(user: dict, prefs: dict):
@@ -33,6 +37,24 @@ async def run_for_user(user: dict, prefs: dict):
         return
 
     try:
+        # rate limit checks
+        jsearch_check = await check_and_increment("jsearch", cost=1)
+        if not jsearch_check["allowed"]:
+            print(f"[scheduler] {jsearch_check['reason']} — skipping {name}")
+            return
+
+        if use_ai_filter or use_cover_letter:
+            groq_check = await check_and_increment("groq", cost=10)
+            if not groq_check["allowed"]:
+                print(f"[scheduler] {groq_check['reason']} — skipping {name}")
+                return
+
+        if send_wa:
+            twilio_check = await check_and_increment("twilio", cost=6)
+            if not twilio_check["allowed"]:
+                print(f"[scheduler] {twilio_check['reason']} — skipping {name}")
+                return
+
         # Step 1: Fetch
         jobs = fetch_jobs(job_title=prefs["job_title"], location=prefs["location"])
         if not jobs:
@@ -40,10 +62,10 @@ async def run_for_user(user: dict, prefs: dict):
             return
 
         # Step 2: Deduplicate
-        sent_cursor  = job_alerts_col.find({"user_id": user_id}, {"apply_link": 1})
+        sent_cursor  = job_links_col.find({"user_id": user_id}, {"link": 1})
         already_sent = set()
         async for doc in sent_cursor:
-            link = doc.get("apply_link", "").strip()
+            link = doc.get("link", "").strip()
             if link:
                 already_sent.add(link)
 
@@ -81,10 +103,10 @@ async def run_for_user(user: dict, prefs: dict):
         if send_wa:
             send_whatsapp(jobs, phone)
         else:
-            print(f"[scheduler] WhatsApp SKIPPED — saving to history only")
+            print(f"[scheduler] WhatsApp SKIPPED")
 
-        # Step 6: Save to MongoDB
-        now  = datetime.utcnow()
+        # Step 6: Save full job data
+        now  = datetime.now(IST).replace(tzinfo=None)
         docs = [
             {
                 "user_id"      : user_id,
@@ -101,6 +123,14 @@ async def run_for_user(user: dict, prefs: dict):
         ]
         if docs:
             await job_alerts_col.insert_many(docs)
+
+        # Step 7: Save lightweight links
+        link_docs = [
+            {"user_id": user_id, "link": job.get("apply_link", "").strip(), "sent_at": now}
+            for job in jobs if job.get("apply_link", "").strip()
+        ]
+        if link_docs:
+            await job_links_col.insert_many(link_docs)
 
         action = "sent via WhatsApp" if send_wa else "saved to history"
         print(f"[scheduler] Done for {name} — {len(jobs)} jobs {action}")
@@ -127,25 +157,23 @@ async def scheduled_job():
 def start_scheduler():
     scheduler = AsyncIOScheduler()
 
-    # Job 1 — runs every minute, sends alerts at user's chosen time
     scheduler.add_job(
         scheduled_job,
-        trigger         = "interval",
-        minutes         = 1,
-        id              = "job_bot_scheduler",
-        name            = "Job Bot Scheduler",
-        replace_existing= True,
+        trigger          = "interval",
+        minutes          = 1,
+        id               = "job_bot_scheduler",
+        name             = "Job Bot Scheduler",
+        replace_existing = True,
     )
 
-    # Job 2 — runs once daily at midnight, deletes alerts older than 6 days
     scheduler.add_job(
         cleanup_old_alerts,
-        trigger         = "cron",
-        hour            = 0,
-        minute          = 0,
-        id              = "cleanup_scheduler",
-        name            = "Cleanup Old Alerts",
-        replace_existing= True,
+        trigger          = "cron",
+        hour             = 0,
+        minute           = 0,
+        id               = "cleanup_scheduler",
+        name             = "Cleanup Old Alerts",
+        replace_existing = True,
     )
 
     scheduler.start()
