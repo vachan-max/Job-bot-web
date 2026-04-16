@@ -136,6 +136,13 @@ export default function Dashboard() {
       alert("Failed to save preferences.");
     } finally { setSavingPrefs(false); }
   }
+  function to12Hour(time24) {
+  if (!time24) return "";
+  const [h, m] = time24.split(":").map(Number);
+  const period = h >= 12 ? "PM" : "AM";
+  const hour   = h % 12 || 12;
+  return `${hour}:${m.toString().padStart(2, "0")} ${period}`;
+}
 
   async function handleRunNow() {
     try {
@@ -160,7 +167,7 @@ export default function Dashboard() {
     ? user.displayName.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2)
     : "U";
 
-  const scoreColor = s => s >= 85 ? "#22c55e" : s >= 70 ? "#f59e0b" : "#ef4444";
+  const scoreColor = s => s >= 85 ? "#10b981" : s >= 70 ? "#f59e0b" : "#ef4444";
 
   const usageBar = (used, limit) => {
     const pct = Math.min((used / limit) * 100, 100);
@@ -180,11 +187,11 @@ export default function Dashboard() {
         .card:nth-child(1){animation-delay:.05s} .card:nth-child(2){animation-delay:.12s} .card:nth-child(3){animation-delay:.19s}
         .field-input:focus { outline:none; border-color:#6366f1!important; box-shadow:0 0 0 3px rgba(99,102,241,.15); }
         .btn-save:hover:not(:disabled)  { background:#4f46e5!important; transform:translateY(-1px); }
-        .btn-run:hover:not(:disabled)   { background:#059669!important; transform:translateY(-1px); }
+        .btn-run:hover:not(:disabled)   { background:#dcfce7!important; transform:translateY(-1px); }
         .btn-logout:hover  { background:rgba(255,255,255,.08)!important; }
         .btn-history:hover { background:rgba(99,102,241,.12)!important; color:#6366f1!important; }
         .nav-link:hover    { opacity:1!important; }
-        .job-card:hover    { border-color:rgba(99,102,241,.4)!important; background:rgba(99,102,241,.04)!important; }
+        .job-card:hover    { border-color:rgba(16,185,129,.4)!important; background:rgba(16,185,129,.04)!important; transform:translateY(-4px); }
         .score-pill { font-family:'Syne',sans-serif; font-size:13px; font-weight:600; padding:2px 10px; border-radius:99px; }
         input[type=range] { -webkit-appearance:none; width:100%; height:4px; border-radius:2px;
           background:linear-gradient(to right,#6366f1 0%,#6366f1 calc((var(--val,70) - 0)/(100 - 0)*100%),#e2e8f0 calc((var(--val,70) - 0)/(100 - 0)*100%),#e2e8f0 100%); }
@@ -194,7 +201,7 @@ export default function Dashboard() {
       {/* NAV */}
       <nav style={styles.nav}>
         <div style={styles.navInner}>
-          <span style={styles.logo}>JobBot</span>
+          <span style={styles.logo}>PingScore</span>
           <div style={styles.navLinks}>
             <button style={styles.navLink} className="nav-link" onClick={() => navigate("/history")}>
               <IconHistory /> History
@@ -219,8 +226,8 @@ export default function Dashboard() {
           </div>
           {schedulerStatus && (
             <div style={styles.statusBadge}>
-              <span style={{ width:8, height:8, borderRadius:"50%", background:"#22c55e", display:"inline-block", animation:"pulse 2s infinite" }} />
-              Scheduler running · next at {prefs.schedule_time}
+              <span style={{ width:8, height:8, borderRadius:"50%", background:"#10b981", display:"inline-block", animation:"pulse 2s infinite" }} />
+              Scheduler running · next at {to12Hour(prefs.schedule_time)}
             </div>
           )}
         </div>
@@ -305,7 +312,7 @@ export default function Dashboard() {
                           onClick={() => setPrefs(p => ({ ...p, [key]: !p[key] }))}
                           style={{ position:"relative", width:44, height:24, borderRadius:99, border:"none",
                             cursor:"pointer", flexShrink:0, transition:"background .2s", padding:0,
-                            background: prefs[key] ? "#6366f1" : "#e5e7eb" }}>
+                            background: prefs[key] ? "#10b981" : "#e5e7eb" }}>
                           <span style={{ position:"absolute", top:2, width:20, height:20, borderRadius:"50%",
                             background:"#fff", boxShadow:"0 1px 3px rgba(0,0,0,.2)", transition:"transform .2s", display:"block",
                             transform: prefs[key] ? "translateX(20px)" : "translateX(2px)" }} />
@@ -319,7 +326,7 @@ export default function Dashboard() {
                   <button type="submit" className="btn-save" disabled={savingPrefs} style={styles.btnSave}>
                     {savingPrefs ? <><IconLoader /> Saving...</> : savedOk ? <><IconCheck /> Saved!</> : "Save Preferences"}
                   </button>
-                  {savedOk && <span style={{ display:"flex", alignItems:"center", gap:4, fontSize:13, color:"#16a34a" }}><IconCheck /> Preferences updated</span>}
+                  {savedOk && <span style={{ display:"flex", alignItems:"center", gap:4, fontSize:13, color:"#10b981" }}><IconCheck /> Preferences updated</span>}
                 </div>
               </form>
             )}
@@ -330,7 +337,7 @@ export default function Dashboard() {
 
             {/* Run Now */}
             <section style={{ ...styles.card, textAlign:"center", paddingTop:32, paddingBottom:32 }} className="card">
-              <div style={{ width:52, height:52, borderRadius:14, background:"rgba(99,102,241,.1)", color:"#6366f1",
+              <div style={{ width:52, height:52, borderRadius:18, background:"#ecfdf5", color:"#059669",
                 display:"flex", alignItems:"center", justifyContent:"center", margin:"0 auto 16px" }}>
                 <IconWhatsapp />
               </div>
@@ -341,9 +348,9 @@ export default function Dashboard() {
               </button>
               {runResult && (
                 <div style={{ ...styles.runResult,
-                  background  : runResult.success ? "rgba(34,197,94,.08)" : "rgba(239,68,68,.08)",
-                  borderColor : runResult.success ? "rgba(34,197,94,.3)"  : "rgba(239,68,68,.3)",
-                  color       : runResult.success ? "#16a34a"             : "#dc2626" }}>
+                  background  : runResult.success ? "rgba(16,185,129,.08)" : "rgba(239,68,68,.08)",
+                  borderColor : runResult.success ? "rgba(16,185,129,.3)"  : "rgba(239,68,68,.3)",
+                  color       : runResult.success ? "#059669"             : "#dc2626" }}>
                   {runResult.success ? <IconCheck /> : "✕"}&nbsp;
                   {runResult.message}
                   {runResult.jobs_sent != null && ` (${runResult.jobs_sent} jobs sent)`}
@@ -436,32 +443,32 @@ function FieldGroup({ icon, label, htmlFor, children }) {
 }
 
 const styles = {
-  root      : { minHeight:"100vh", background:"#f8f9fc", fontFamily:"'DM Sans',sans-serif", color:"#111827" },
+  root      : { minHeight:"100vh", background:"linear-gradient(to bottom right, #f8fafc, #ffffff)", fontFamily:"'DM Sans',sans-serif", color:"#111827" },
   nav       : { background:"#fff", borderBottom:"1px solid #e5e7eb", position:"sticky", top:0, zIndex:10 },
   navInner  : { maxWidth:1200, margin:"0 auto", padding:"0 24px", height:60, display:"flex", alignItems:"center", justifyContent:"space-between" },
-  logo      : { fontFamily:"'Syne',sans-serif", fontWeight:700, fontSize:22, color:"#6366f1", letterSpacing:"-0.5px" },
+  logo      : { fontFamily:"'Syne',sans-serif", fontWeight:700, fontSize:22, color:"#111827", letterSpacing:"-1px" },
   navLinks  : { display:"flex", alignItems:"center", gap:8 },
-  navLink   : { display:"flex", alignItems:"center", gap:6, padding:"6px 12px", borderRadius:8, border:"none", background:"transparent", color:"#6b7280", fontSize:14, fontFamily:"'DM Sans',sans-serif", cursor:"pointer", opacity:0.8, transition:"all .2s" },
+  navLink   : { display:"flex", alignItems:"center", gap:6, padding:"6px 12px", borderRadius:12, border:"none", background:"transparent", color:"#6b7280", fontSize:14, fontFamily:"'DM Sans',sans-serif", cursor:"pointer", opacity:0.8, transition:"all .2s" },
   avatar    : { width:26, height:26, borderRadius:"50%", background:"#6366f1", color:"#fff", display:"flex", alignItems:"center", justifyContent:"center", fontSize:11, fontWeight:600 },
   main      : { maxWidth:1200, margin:"0 auto", padding:"32px 24px" },
   greeting  : { display:"flex", alignItems:"flex-end", justifyContent:"space-between", marginBottom:28, flexWrap:"wrap", gap:12 },
   greetSub  : { fontSize:14, color:"#6b7280", marginBottom:2 },
-  greetName : { fontFamily:"'Syne',sans-serif", fontSize:32, fontWeight:700, color:"#111827", letterSpacing:"-1px" },
-  statusBadge: { display:"flex", alignItems:"center", gap:8, padding:"6px 14px", borderRadius:99, background:"rgba(34,197,94,.1)", color:"#16a34a", fontSize:13, fontWeight:500, border:"1px solid rgba(34,197,94,.2)" },
+  greetName : { fontFamily:"'Syne',sans-serif", fontSize:32, fontWeight:700, color:"#111827", letterSpacing:"-0.025em" },
+  statusBadge: { display:"flex", alignItems:"center", gap:8, padding:"6px 14px", borderRadius:99, background:"#ecfdf5", color:"#059669", fontSize:13, fontWeight:500, border:"1px solid rgba(16,185,129,.2)" },
   grid      : { display:"grid", gridTemplateColumns:"1fr 380px", gap:20, alignItems:"start" },
-  card      : { background:"#fff", borderRadius:16, border:"1px solid #e5e7eb", padding:28, boxShadow:"0 1px 4px rgba(0,0,0,.04)" },
+  card      : { background:"#fff", borderRadius:24, border:"1px solid #e5e7eb", padding:28, boxShadow:"0 4px 12px rgba(0,0,0,.03)" },
   cardHeader: { marginBottom:24 },
-  cardTitle : { fontFamily:"'Syne',sans-serif", fontSize:18, fontWeight:700, color:"#111827", marginBottom:4 },
+  cardTitle : { fontFamily:"'Syne',sans-serif", fontSize:18, fontWeight:700, color:"#111827", marginBottom:4, letterSpacing: "-0.025em" },
   cardSub   : { fontSize:13, color:"#6b7280" },
   loadingState: { display:"flex", alignItems:"center", gap:8, color:"#9ca3af", fontSize:14, padding:"20px 0" },
   form      : { display:"flex", flexDirection:"column", gap:20 },
   fieldRow  : { display:"flex", gap:16, flexWrap:"wrap" },
-  input     : { width:"100%", padding:"10px 14px", borderRadius:10, border:"1.5px solid #e5e7eb", fontSize:14, color:"#111827", background:"#fafafa", fontFamily:"'DM Sans',sans-serif", transition:"border-color .2s, box-shadow .2s" },
-  togglesCard: { background:"#f8f9fc", border:"1px solid #e5e7eb", borderRadius:12, padding:"16px 20px" },
-  btnSave   : { display:"flex", alignItems:"center", gap:8, padding:"11px 24px", borderRadius:10, border:"none", background:"#6366f1", color:"#fff", fontSize:14, fontWeight:500, fontFamily:"'DM Sans',sans-serif", cursor:"pointer", transition:"all .2s" },
+  input     : { width:"100%", padding:"10px 14px", borderRadius:12, border:"1.5px solid #e5e7eb", fontSize:14, color:"#111827", background:"#fafafa", fontFamily:"'DM Sans',sans-serif", transition:"border-color .2s, box-shadow .2s" },
+  togglesCard: { background:"#f8f9fc", border:"1px solid #e5e7eb", borderRadius:16, padding:"16px 20px" },
+  btnSave   : { display:"flex", alignItems:"center", gap:8, padding:"11px 24px", borderRadius:12, border:"none", background:"#6366f1", color:"#fff", fontSize:14, fontWeight:500, fontFamily:"'DM Sans',sans-serif", cursor:"pointer", transition:"all .2s" },
   rightCol  : { display:"flex", flexDirection:"column", gap:20 },
-  btnRun    : { display:"flex", alignItems:"center", justifyContent:"center", gap:8, width:"100%", padding:"13px", marginTop:20, borderRadius:10, border:"none", background:"#10b981", color:"#fff", fontSize:15, fontWeight:500, fontFamily:"'DM Sans',sans-serif", cursor:"pointer", transition:"all .2s" },
-  runResult : { display:"flex", alignItems:"center", gap:6, marginTop:14, padding:"10px 14px", borderRadius:10, border:"1px solid", fontSize:13, fontWeight:500, textAlign:"left" },
-  btnHistory: { padding:"4px 12px", borderRadius:8, border:"1.5px solid #e5e7eb", background:"transparent", color:"#6b7280", fontSize:13, fontFamily:"'DM Sans',sans-serif", cursor:"pointer", transition:"all .2s", fontWeight:500 },
-  jobCard   : { padding:"12px 14px", borderRadius:10, border:"1px solid #e5e7eb", transition:"all .2s", cursor:"default" },
+  btnRun    : { display:"flex", alignItems:"center", justifyContent:"center", gap:8, width:"100%", padding:"13px", marginTop:20, borderRadius:14, border:"none", background:"#ecfdf5", color:"#059669", fontSize:15, fontWeight:600, fontFamily:"'DM Sans',sans-serif", cursor:"pointer", transition:"all .2s" },
+  runResult : { display:"flex", alignItems:"center", gap:6, marginTop:14, padding:"10px 14px", borderRadius:12, border:"1px solid", fontSize:13, fontWeight:500, textAlign:"left" },
+  btnHistory: { padding:"4px 12px", borderRadius:10, border:"1.5px solid #e5e7eb", background:"transparent", color:"#6b7280", fontSize:13, fontFamily:"'DM Sans',sans-serif", cursor:"pointer", transition:"all .2s", fontWeight:500 },
+  jobCard   : { padding:"12px 14px", borderRadius:12, border:"1px solid #e5e7eb", transition:"all .2s", cursor:"default" },
 };

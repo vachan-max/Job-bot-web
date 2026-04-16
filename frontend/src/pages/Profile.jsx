@@ -184,7 +184,7 @@ export default function Profile() {
           <button className="back-btn" style={s.backBtn} onClick={() => navigate("/dashboard")}>
             <IconBack /> Dashboard
           </button>
-          <span style={s.logo}>JobBot</span>
+          <span style={s.logo}>PingScore</span>
           <button style={s.logoutBtn} onClick={handleSignOut}>
             <IconLogout /> Sign out
           </button>
@@ -225,11 +225,11 @@ export default function Profile() {
             {/* WhatsApp */}
             <section style={s.card} className="card">
               <h2 style={s.cardTitle}>WhatsApp Number</h2>
-              <p style={s.cardSub}>Job alerts will be sent to this number daily and monday</p>
+              <p style={s.cardSub}>Job alerts will be sent to this number daily</p>
 
               {phone && (
                 <div style={{ display:"flex", alignItems:"center", gap:8, marginTop:16, padding:"8px 12px",
-                  borderRadius:8, background:"rgba(34,197,94,.08)", border:"1px solid rgba(34,197,94,.2)", color:"#16a34a" }}>
+                  borderRadius:12, background:"#ecfdf5", border:"1px solid rgba(16,185,129,.2)", color:"#059669" }}>
                   <IconWhatsapp />
                   <span style={{ fontSize:13, fontWeight:500 }}>Currently: {phone}</span>
                 </div>
@@ -239,17 +239,17 @@ export default function Profile() {
                 <label style={s.label}><IconPhone /> Mobile number (India)</label>
                 <div style={{ display:"flex", alignItems:"stretch" }}>
                   <span style={{ display:"flex", alignItems:"center", padding:"0 14px", background:"#f3f4f6",
-                    border:"1.5px solid #e5e7eb", borderRight:"none", borderRadius:"10px 0 0 10px",
+                    border:"1.5px solid #e5e7eb", borderRight:"none", borderRadius:"12px 0 0 12px",
                     fontSize:14, color:"#6b7280", fontWeight:500 }}>+91</span>
                   <input className="field-input"
-                    style={{ ...s.input, borderRadius:"0 10px 10px 0", borderLeft:"none" }}
+                    style={{ ...s.input, borderRadius:"0 12px 12px 0", borderLeft:"none" }}
                     placeholder="9876543210" value={rawPhone} maxLength={10}
                     onChange={e => { setRawPhone(e.target.value.replace(/\D/g,"").slice(0,10)); setPhoneError(""); }} />
                 </div>
                 {phoneError && <p style={s.errorText}>{phoneError}</p>}
                 <p style={s.hintText}>
                   Make sure you joined the Twilio sandbox — send&nbsp;
-                  <code style={s.code}>join &lt;two-words&gt;</code> to the Twilio number. Expires every 72hrs.
+                  <code style={s.code}>join &lt;two-words&gt;</code> to the Twilio number.
                 </p>
                 <button type="submit" className="btn-save" disabled={savingPhone} style={s.btnSave}>
                   {savingPhone ? <><IconLoader /> Saving...</> : phoneSaved ? <><IconCheck /> Saved!</> : "Save Number"}
@@ -269,7 +269,7 @@ export default function Profile() {
               {/* current resume */}
               {resumeName && (
                 <div style={{ display:"flex", alignItems:"center", gap:8, marginTop:16, marginBottom:4,
-                  padding:"8px 12px", borderRadius:8, background:"rgba(99,102,241,.06)",
+                  padding:"8px 12px", borderRadius:12, background:"rgba(99,102,241,.06)",
                   border:"1px solid rgba(99,102,241,.15)", color:"#6366f1" }}>
                   <IconFile />
                   <span style={{ fontSize:13, color:"#374151", flex:1 }}>{resumeName}</span>
@@ -278,7 +278,7 @@ export default function Profile() {
                     onClick={handleRemoveResume}
                     disabled={removingResume}
                     style={{ display:"flex", alignItems:"center", gap:4, marginLeft:8, background:"transparent",
-                      border:"1.5px solid rgba(239,68,68,.3)", borderRadius:6, color:"#ef4444",
+                      border:"1.5px solid rgba(239,68,68,.3)", borderRadius:8, color:"#ef4444",
                       cursor:"pointer", fontSize:12, fontWeight:500, fontFamily:"'DM Sans',sans-serif",
                       padding:"3px 8px", transition:"all .2s" }}>
                     {removingResume ? "..." : <><IconTrash /> Remove</>}
@@ -292,7 +292,7 @@ export default function Profile() {
                 onDragOver={e => { e.preventDefault(); setDragOver(true); }}
                 onDragLeave={() => setDragOver(false)}
                 onDrop={e => { e.preventDefault(); setDragOver(false); handleFilePick(e.dataTransfer.files[0]); }}>
-                <div style={{ width:44, height:44, borderRadius:12, background:"rgba(99,102,241,.1)",
+                <div style={{ width:44, height:44, borderRadius:16, background:"rgba(99,102,241,.1)",
                   color:"#6366f1", display:"flex", alignItems:"center", justifyContent:"center", margin:"0 auto 12px" }}>
                   <IconUpload />
                 </div>
@@ -313,7 +313,7 @@ export default function Profile() {
                 style={{ display:"none" }} onChange={e => handleFilePick(e.target.files[0])} />
 
               {resumeError  && <p style={s.errorText}>{resumeError}</p>}
-              {resumeSaved  && <p style={{ ...s.errorText, color:"#16a34a" }}><IconCheck /> Resume uploaded successfully!</p>}
+              {resumeSaved  && <p style={{ ...s.errorText, color:"#10b981" }}><IconCheck /> Resume uploaded successfully!</p>}
 
               <button className="btn-upload" disabled={!resumeFile || uploadingResume}
                 onClick={handleUploadResume}
@@ -321,16 +321,6 @@ export default function Profile() {
                   cursor:(!resumeFile || uploadingResume) ? "not-allowed" : "pointer" }}>
                 {uploadingResume ? <><IconLoader /> Uploading...</> : resumeSaved ? <><IconCheck /> Uploaded!</> : <><IconUpload /> Upload Resume</>}
               </button>
-
-              <div style={s.infoBox}>
-                <strong style={{ fontSize:12 }}>What happens after upload?</strong>
-                <ul style={{ marginTop:6, paddingLeft:18, fontSize:12, color:"#6b7280", lineHeight:1.8 }}>
-                  <li>PDF saved as <code style={s.code}>resume.pdf</code> on backend</li>
-                  <li>Text extracted to <code style={s.code}>resume.txt</code> automatically</li>
-                  <li>Groq AI uses it to calculate match % for every job</li>
-                  <li>Cover letters tailored to your resume skills</li>
-                </ul>
-              </div>
             </section>
 
             {/* Danger zone */}
@@ -339,7 +329,7 @@ export default function Profile() {
               <p style={s.cardSub}>Permanent actions — cannot be undone</p>
               <button onClick={handleSignOut}
                 style={{ display:"flex", alignItems:"center", gap:8, marginTop:16, padding:"10px 20px",
-                  borderRadius:10, border:"1.5px solid rgba(239,68,68,.3)", background:"transparent",
+                  borderRadius:12, border:"1.5px solid rgba(239,68,68,.3)", background:"transparent",
                   color:"#dc2626", fontSize:14, fontWeight:500, fontFamily:"'DM Sans',sans-serif",
                   cursor:"pointer", transition:"all .2s" }}>
                 <IconLogout /> Sign out of all devices
@@ -365,30 +355,30 @@ function InfoRow({ icon, label, value, mono }) {
 }
 
 const s = {
-  root      : { minHeight:"100vh", background:"#f8f9fc", fontFamily:"'DM Sans',sans-serif", color:"#111827" },
+  root      : { minHeight:"100vh", background:"linear-gradient(to bottom right, #f8fafc, #ffffff)", fontFamily:"'DM Sans',sans-serif", color:"#111827" },
   nav       : { background:"#fff", borderBottom:"1px solid #e5e7eb", position:"sticky", top:0, zIndex:10 },
   navInner  : { maxWidth:1100, margin:"0 auto", padding:"0 24px", height:60, display:"flex", alignItems:"center", justifyContent:"space-between" },
-  backBtn   : { display:"flex", alignItems:"center", gap:6, padding:"6px 12px", borderRadius:8, border:"none", background:"transparent", color:"#6b7280", fontSize:14, fontFamily:"'DM Sans',sans-serif", cursor:"pointer", transition:"color .2s" },
-  logo      : { fontFamily:"'Syne',sans-serif", fontWeight:700, fontSize:22, color:"#6366f1" },
-  logoutBtn : { display:"flex", alignItems:"center", gap:6, padding:"6px 12px", borderRadius:8, border:"none", background:"transparent", color:"#6b7280", fontSize:14, fontFamily:"'DM Sans',sans-serif", cursor:"pointer" },
+  backBtn   : { display:"flex", alignItems:"center", gap:6, padding:"6px 12px", borderRadius:12, border:"none", background:"transparent", color:"#6b7280", fontSize:14, fontFamily:"'DM Sans',sans-serif", cursor:"pointer", transition:"color .2s" },
+  logo      : { fontFamily:"'Syne',sans-serif", fontWeight:700, fontSize:22, color:"#111827", letterSpacing:"-0.025em" },
+  logoutBtn : { display:"flex", alignItems:"center", gap:6, padding:"6px 12px", borderRadius:12, border:"none", background:"transparent", color:"#6b7280", fontSize:14, fontFamily:"'DM Sans',sans-serif", cursor:"pointer" },
   main      : { maxWidth:1100, margin:"0 auto", padding:"32px 24px" },
   pageHeader: { display:"flex", alignItems:"center", gap:20, marginBottom:32 },
   avatarLg  : { width:64, height:64, borderRadius:"50%", background:"linear-gradient(135deg,#6366f1,#8b5cf6)", color:"#fff", display:"flex", alignItems:"center", justifyContent:"center", fontSize:24, fontWeight:700, fontFamily:"'Syne',sans-serif", flexShrink:0 },
-  pageTitle : { fontFamily:"'Syne',sans-serif", fontSize:28, fontWeight:700, color:"#111827", letterSpacing:"-0.5px" },
+  pageTitle : { fontFamily:"'Syne',sans-serif", fontSize:28, fontWeight:700, color:"#111827", letterSpacing:"-0.025em" },
   pageSub   : { fontSize:14, color:"#6b7280", marginTop:4 },
   grid      : { display:"grid", gridTemplateColumns:"1fr 1fr", gap:20, alignItems:"start" },
-  card      : { background:"#fff", borderRadius:16, border:"1px solid #e5e7eb", padding:28, boxShadow:"0 1px 4px rgba(0,0,0,.04)" },
-  cardTitle : { fontFamily:"'Syne',sans-serif", fontSize:17, fontWeight:700, color:"#111827", marginBottom:4 },
+  card      : { background:"#fff", borderRadius:24, border:"1px solid #e5e7eb", padding:28, boxShadow:"0 4px 12px rgba(0,0,0,.03)" },
+  cardTitle : { fontFamily:"'Syne',sans-serif", fontSize:17, fontWeight:700, color:"#111827", marginBottom:4, letterSpacing: "-0.025em" },
   cardSub   : { fontSize:13, color:"#6b7280" },
   label     : { display:"flex", alignItems:"center", gap:6, fontSize:13, fontWeight:500, color:"#374151", marginBottom:8 },
-  input     : { width:"100%", padding:"10px 14px", borderRadius:10, border:"1.5px solid #e5e7eb", fontSize:14, color:"#111827", background:"#fafafa", fontFamily:"'DM Sans',sans-serif", transition:"border-color .2s, box-shadow .2s" },
+  input     : { width:"100%", padding:"10px 14px", borderRadius:12, border:"1.5px solid #e5e7eb", fontSize:14, color:"#111827", background:"#fafafa", fontFamily:"'DM Sans',sans-serif", transition:"border-color .2s, box-shadow .2s" },
   hintText  : { fontSize:12, color:"#9ca3af", marginTop:10, lineHeight:1.6 },
   errorText : { display:"flex", alignItems:"center", gap:4, fontSize:12, color:"#dc2626", marginTop:8 },
   code      : { fontFamily:"monospace", background:"#f3f4f6", padding:"1px 5px", borderRadius:4, fontSize:11 },
-  btnSave   : { display:"flex", alignItems:"center", gap:8, marginTop:16, padding:"11px 24px", borderRadius:10, border:"none", background:"#6366f1", color:"#fff", fontSize:14, fontWeight:500, fontFamily:"'DM Sans',sans-serif", cursor:"pointer", transition:"all .2s" },
-  dropZone  : { marginTop:16, border:"2px dashed #e5e7eb", borderRadius:12, padding:"32px 20px", textAlign:"center", cursor:"pointer", background:"#fafafa" },
+  btnSave   : { display:"flex", alignItems:"center", gap:8, marginTop:16, padding:"11px 24px", borderRadius:12, border:"none", background:"#6366f1", color:"#fff", fontSize:14, fontWeight:500, fontFamily:"'DM Sans',sans-serif", cursor:"pointer", transition:"all .2s" },
+  dropZone  : { marginTop:16, border:"2px dashed #e5e7eb", borderRadius:24, padding:"32px 20px", textAlign:"center", cursor:"pointer", background:"#fafafa" },
   dropTitle : { fontSize:14, fontWeight:500, color:"#374151", marginBottom:4 },
   dropSub   : { fontSize:12, color:"#9ca3af" },
-  btnUpload : { display:"flex", alignItems:"center", gap:8, marginTop:16, padding:"11px 24px", borderRadius:10, border:"none", background:"#10b981", color:"#fff", fontSize:14, fontWeight:500, fontFamily:"'DM Sans',sans-serif", transition:"all .2s" },
-  infoBox   : { marginTop:20, padding:"14px 16px", borderRadius:10, background:"#f8f9fc", border:"1px solid #e5e7eb", color:"#374151" },
+  btnUpload : { display:"flex", alignItems:"center", gap:8, marginTop:16, padding:"11px 24px", borderRadius:12, border:"none", background:"#10b981", color:"#fff", fontSize:14, fontWeight:500, fontFamily:"'DM Sans',sans-serif", transition:"all .2s" },
+  infoBox   : { marginTop:20, padding:"14px 16px", borderRadius:16, background:"#f8f9fc", border:"1px solid #e5e7eb", color:"#374151" },
 };

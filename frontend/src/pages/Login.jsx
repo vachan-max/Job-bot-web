@@ -37,10 +37,10 @@ export default function Login() {
   return (
     <div style={{
       minHeight: '100vh',
-      background: '#f8f9fa',
+      background: 'linear-gradient(to bottom right, #f8fafc, #ffffff)',
       display: 'flex',
       flexDirection: 'column',
-      fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif"
+      fontFamily: "'DM Sans', sans-serif"
     }}>
 
       {/* Center content */}
@@ -55,65 +55,60 @@ export default function Login() {
         {/* Card */}
         <div style={{
           width: '100%',
-          maxWidth: 380,
-          background: '#0a0a0a',
-          borderRadius: 16,
-          padding: '36px 32px',
-          border: '1px solid rgba(255,255,255,0.08)',
+          maxWidth: 400,
+          background: '#ffffff',
+          borderRadius: 24,
+          padding: '48px 40px',
+          border: '1px solid #e5e7eb',
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
+          boxShadow: '0 10px 25px rgba(0,0,0,0.05)'
         }}>
 
           {/* Logo */}
-          <div style={{ marginBottom: 24, textAlign: 'center' }}>
+          <div style={{ marginBottom: 32, textAlign: 'center' }}>
             <div style={{
-              width: 48, height: 48,
-              background: '#fff',
-              borderRadius: 12,
+              width: 56, height: 56,
+              background: '#ecfdf5',
+              borderRadius: 16,
               display: 'flex', alignItems: 'center',
               justifyContent: 'center',
-              margin: '0 auto 14px'
+              margin: '0 auto 16px',
+              color: '#059669'
             }}>
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-                <path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                  stroke="#0a0a0a" strokeWidth="2.2" strokeLinecap="round"/>
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
               </svg>
             </div>
             <h1 style={{
-              fontSize: 22, fontWeight: 700,
-              color: '#ffffff', marginBottom: 4, letterSpacing: '-0.3px'
+              fontFamily: "'Syne', sans-serif",
+              fontSize: 28, fontWeight: 700,
+              color: '#111827', marginBottom: 6, letterSpacing: '-0.025em'
             }}>
-              Job Bot
+              PingScore
             </h1>
-            <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)' }}>
-              AI-powered job alerts on WhatsApp
+            <p style={{ fontSize: 14, color: '#6b7280' }}>
+              Premium AI job alerts on WhatsApp
             </p>
           </div>
-
-          {/* Divider */}
-          <div style={{
-            width: '100%', height: 1,
-            background: 'rgba(255,255,255,0.08)',
-            marginBottom: 28
-          }}/>
 
           {/* Features */}
           <ul style={{
             width: '100%', listStyle: 'none',
-            padding: 0, margin: '0 0 28px 0',
-            display: 'flex', flexDirection: 'column', gap: 12
+            padding: 0, margin: '0 0 32px 0',
+            display: 'flex', flexDirection: 'column', gap: 14
           }}>
             {features.map((f, i) => (
-              <li key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
-                <svg width="18" height="18" viewBox="0 0 24 24"
-                  fill="#ffffff" style={{ marginTop: 1, flexShrink: 0 }}>
+              <li key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+                <svg width="20" height="20" viewBox="0 0 24 24"
+                  fill="#10b981" style={{ marginTop: 1, flexShrink: 0 }}>
                   <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10
                     10-4.48 10-10S17.52 2 12 2zm-2
                     14.5l-4-4 1.41-1.41L10 13.67l6.59-6.59L18
                     8.5l-8 8z"/>
                 </svg>
-                <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.65)', lineHeight: 1.5 }}>
+                <span style={{ fontSize: 14, color: '#4b5563', lineHeight: 1.5 }}>
                   {f}
                 </span>
               </li>
@@ -123,10 +118,10 @@ export default function Login() {
           {/* Error */}
           {error && (
             <div style={{
-              width: '100%', marginBottom: 14,
-              padding: '10px 14px', borderRadius: 8,
-              background: '#3f0a0a', border: '1px solid #7f1d1d',
-              color: '#fca5a5', fontSize: 13
+              width: '100%', marginBottom: 16,
+              padding: '12px 14px', borderRadius: 12,
+              background: '#fef2f2', border: '1px solid #fecaca',
+              color: '#dc2626', fontSize: 13, fontWeight: 500
             }}>
               {error}
             </div>
@@ -137,28 +132,28 @@ export default function Login() {
             onClick={handleGoogleLogin}
             disabled={loading}
             style={{
-              width: '100%', height: 48,
-              background: '#ffffff',
-              border: '1px solid rgba(0,0,0,0.1)',
-              borderRadius: 10,
+              width: '100%', height: 52,
+              background: '#111827',
+              border: 'none',
+              borderRadius: 14,
               display: 'flex', alignItems: 'center',
-              justifyContent: 'center', gap: 10,
-              fontSize: 14, fontWeight: 500,
-              color: '#111',
+              justifyContent: 'center', gap: 12,
+              fontSize: 15, fontWeight: 600,
+              color: '#ffffff',
               cursor: loading ? 'not-allowed' : 'pointer',
               opacity: loading ? 0.7 : 1,
-              transition: 'background 0.15s',
+              transition: 'all 0.2s',
               fontFamily: 'inherit'
             }}
-            onMouseEnter={e => { if (!loading) e.currentTarget.style.background = '#f5f5f5' }}
-            onMouseLeave={e => { e.currentTarget.style.background = '#ffffff' }}
+            onMouseEnter={e => { if (!loading) e.currentTarget.style.background = '#1f2937'; e.currentTarget.style.transform = 'translateY(-1px)' }}
+            onMouseLeave={e => { e.currentTarget.style.background = '#111827'; e.currentTarget.style.transform = 'translateY(0)' }}
           >
             {loading ? (
               <>
                 <div style={{
-                  width: 16, height: 16,
-                  border: '2px solid #d1d5db',
-                  borderTopColor: '#111',
+                  width: 18, height: 18,
+                  border: '2px solid rgba(255,255,255,0.3)',
+                  borderTopColor: '#ffffff',
                   borderRadius: '50%',
                   animation: 'spin 0.7s linear infinite'
                 }}/>
@@ -166,7 +161,7 @@ export default function Login() {
               </>
             ) : (
               <>
-                <svg width="18" height="18" viewBox="0 0 24 24">
+                <svg width="20" height="20" viewBox="0 0 24 24">
                   <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26
                     1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92
                     3.28-4.74 3.28-8.09z" fill="#4285F4"/>
@@ -184,23 +179,14 @@ export default function Login() {
               </>
             )}
           </button>
-
-          {/* Disclaimer */}
-          <p style={{
-            marginTop: 20, fontSize: 11,
-            color: 'rgba(255,255,255,0.25)',
-            textAlign: 'center', letterSpacing: '0.05em'
-          }}>
-            By signing in, you agree to our Terms of Service.
-          </p>
         </div>
       </main>
 
       {/* Footer */}
       <footer style={{
-        background: '#f9fafb',
+        background: '#ffffff',
         borderTop: '1px solid #e5e7eb',
-        padding: '32px 32px'
+        padding: '40px 32px'
       }}>
         <div style={{
           maxWidth: 900, margin: '0 auto',
@@ -208,29 +194,32 @@ export default function Login() {
           flexDirection: 'row',
           justifyContent: 'space-between',
           alignItems: 'center',
-          flexWrap: 'wrap', gap: 12
+          flexWrap: 'wrap', gap: 20
         }}>
-          <span style={{ fontSize: 13, fontWeight: 700, color: '#111' }}>Job Bot</span>
+          <span style={{ fontFamily: "'Syne', sans-serif", fontSize: 18, fontWeight: 700, color: '#111827' }}>PingScore</span>
           <div style={{ display: 'flex', gap: 24 }}>
-            {['Terms of Service', 'Privacy Policy', 'Contact Support'].map(l => (
+            {['Terms', 'Privacy', 'Contact'].map(l => (
               <a key={l} href="#" style={{
-                fontSize: 11, fontWeight: 500,
-                textTransform: 'uppercase', letterSpacing: '0.08em',
-                color: '#6b7280', textDecoration: 'none'
-              }}>{l}</a>
+                fontSize: 12, fontWeight: 600,
+                color: '#6b7280', textDecoration: 'none',
+                transition: 'color 0.2s'
+              }}
+              onMouseEnter={e => e.currentTarget.style.color = '#111827'}
+              onMouseLeave={e => e.currentTarget.style.color = '#6b7280'}
+              >{l}</a>
             ))}
           </div>
           <span style={{
-            fontSize: 11, color: '#9ca3af',
-            textTransform: 'uppercase', letterSpacing: '0.08em'
+            fontSize: 12, color: '#9ca3af',
+            fontWeight: 500
           }}>
-            © 2024 Job Bot. All rights reserved.
+            © 2024 PingScore. All rights reserved.
           </span>
         </div>
       </footer>
 
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Syne:wght@600;700&display=swap');
         @keyframes spin { to { transform: rotate(360deg); } }
       `}</style>
     </div>

@@ -111,7 +111,7 @@ async def run_job_fetch(user_data: dict = Depends(verify_token)):
     # Step 5: WhatsApp
     if send_wa:
         print("[jobs/run] Sending WhatsApp...")
-        send_whatsapp(jobs, phone)
+        send_whatsapp(jobs, phone, prefs=prefs)
     else:
         print("[jobs/run] WhatsApp SKIPPED — saving to history only")
 

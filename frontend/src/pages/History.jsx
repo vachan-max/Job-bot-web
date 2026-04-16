@@ -58,13 +58,13 @@ const IconTrash = () => (
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
 function scoreColor(s) {
-  if (s >= 85) return { bg: "rgba(34,197,94,.12)", text: "#16a34a", border: "rgba(34,197,94,.25)" };
+  if (s >= 85) return { bg: "#ecfdf5", text: "#059669", border: "rgba(16,185,129,.2)" };
   if (s >= 70) return { bg: "rgba(245,158,11,.12)", text: "#d97706", border: "rgba(245,158,11,.25)" };
   return { bg: "rgba(239,68,68,.12)", text: "#dc2626", border: "rgba(239,68,68,.25)" };
 }
 
 function matchColor(m) {
-  if (m >= 80) return "#16a34a";
+  if (m >= 80) return "#10b981";
   if (m >= 60) return "#d97706";
   return "#dc2626";
 }
@@ -178,8 +178,8 @@ export default function History() {
         * { box-sizing: border-box; margin: 0; padding: 0; }
         @keyframes spin    { to { transform: rotate(360deg); } }
         @keyframes fadeUp  { from { opacity:0; transform:translateY(14px); } to { opacity:1; transform:translateY(0); } }
-        .job-row { animation: fadeUp .3s ease both; transition: box-shadow .2s, border-color .2s; }
-        .job-row:hover { border-color: rgba(99,102,241,.35) !important; box-shadow: 0 4px 16px rgba(99,102,241,.07) !important; }
+        .job-row { animation: fadeUp .3s ease both; transition: all .2s; }
+        .job-row:hover { border-color: rgba(16,185,129,.35) !important; box-shadow: 0 4px 16px rgba(16,185,129,.07) !important; transform: translateY(-4px); }
         .apply-btn:hover { background: #4f46e5 !important; transform: translateY(-1px); }
         .delete-btn:hover { background: rgba(239,68,68,.08) !important; border-color: #ef4444 !important; }
         .clear-btn:hover:not(:disabled) { background: rgba(239,68,68,.08) !important; }
@@ -189,7 +189,7 @@ export default function History() {
         .expand-btn:hover { color: #6366f1 !important; }
         .search-wrap:focus-within input { border-color: #6366f1 !important; box-shadow: 0 0 0 3px rgba(99,102,241,.12); }
         .sort-select:focus { outline:none; border-color:#6366f1; }
-        .cl-box { background: #f8f9fc; border-radius: 10px; border: 1px solid #e5e7eb;
+        .cl-box { background: #f8f9fc; border-radius: 12px; border: 1px solid #e5e7eb;
           padding: 16px; margin-top: 14px; font-size: 13px; color: #374151;
           line-height: 1.7; white-space: pre-wrap; font-family: 'DM Sans', sans-serif;
           max-height: 220px; overflow-y: auto; }
@@ -278,7 +278,7 @@ export default function History() {
               alignItems: "center",
               gap: 6,
               padding: "8px 14px",
-              borderRadius: 10,
+              borderRadius: 12,
               border: "1.5px solid rgba(239,68,68,.3)",
               background: "transparent",
               color: "#ef4444",
@@ -345,9 +345,11 @@ export default function History() {
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={styles.jobTitleRow}>
                         <h3 style={styles.jobTitle}>{title}</h3>
-                        <span style={{ ...styles.scorePill, background: sc.bg, color: sc.text, border: `1px solid ${sc.border}` }}>
-                          {job.ai_score ?? "—"}
-                        </span>
+                        {(job.ai_score > 0) && (
+                            <span style={{ ...styles.scorePill, background: sc.bg, color: sc.text, border: `1px solid ${sc.border}` }}>
+                            AI Score: {job.ai_score}
+                            </span>
+                          )}
                       </div>
                       <div style={styles.metaRow}>
                         {job.company && (
@@ -364,7 +366,7 @@ export default function History() {
 
                     {/* right: match % + apply + delete */}
                     <div style={styles.jobActions}>
-                      {job.match_percent != null && (
+                      {job.match_percent != null && job.match_percent > 0 && (
                         <div style={styles.matchWrap}>
                           <svg width="38" height="38" viewBox="0 0 38 38">
                             <circle cx="19" cy="19" r="15" fill="none" stroke="#e5e7eb" strokeWidth="3"/>
@@ -381,7 +383,7 @@ export default function History() {
                               {job.match_percent}%
                             </span>
                           </div>
-                          <span style={styles.matchLabel}>match</span>
+                          <span style={styles.matchLabel}>Resume match</span>
                         </div>
                       )}
 
@@ -460,41 +462,41 @@ export default function History() {
 
 // ─── styles ───────────────────────────────────────────────────────────────────
 const styles = {
-  root: { minHeight: "100vh", background: "#f8f9fc", fontFamily: "'DM Sans', sans-serif", color: "#111827" },
+  root: { minHeight: "100vh", background: "linear-gradient(to bottom right, #f8fafc, #ffffff)", fontFamily: "'DM Sans', sans-serif", color: "#111827" },
   nav: { background: "#fff", borderBottom: "1px solid #e5e7eb", position: "sticky", top: 0, zIndex: 10 },
   navInner: { maxWidth: 1100, margin: "0 auto", padding: "0 24px", height: 60, display: "flex", alignItems: "center", justifyContent: "space-between" },
   backBtn: { display: "flex", alignItems: "center", gap: 6, padding: "6px 12px", borderRadius: 8, border: "none", background: "transparent", color: "#6b7280", fontSize: 14, fontFamily: "'DM Sans', sans-serif", cursor: "pointer", minWidth: 120 },
-  logo: { fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: 20, color: "#111827" },
+  logo: { fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: 20, color: "#111827", letterSpacing: "-0.025em" },
   main: { maxWidth: 1100, margin: "0 auto", padding: "32px 24px" },
   statsRow: { display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16, marginBottom: 28 },
-  statCard: { background: "#fff", border: "1px solid #e5e7eb", borderRadius: 14, padding: "20px 24px", display: "flex", flexDirection: "column", gap: 4 },
-  statVal: { fontFamily: "'Syne', sans-serif", fontSize: 32, fontWeight: 700, color: "#111827", letterSpacing: "-1px" },
+  statCard: { background: "#fff", border: "1px solid #e5e7eb", borderRadius: 24, padding: "20px 24px", display: "flex", flexDirection: "column", gap: 4, boxShadow: "0 4px 12px rgba(0,0,0,.03)" },
+  statVal: { fontFamily: "'Syne', sans-serif", fontSize: 32, fontWeight: 700, color: "#111827", letterSpacing: "-0.025em" },
   statLabel: { fontSize: 13, color: "#6b7280" },
   toolbar: { display: "flex", alignItems: "center", gap: 12, marginBottom: 16, flexWrap: "wrap" },
   searchWrap: { position: "relative", flex: 1, minWidth: 220 },
   searchIcon: { position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "#9ca3af", display: "flex" },
-  searchInput: { width: "100%", padding: "9px 14px 9px 36px", borderRadius: 10, border: "1.5px solid #e5e7eb", fontSize: 14, fontFamily: "'DM Sans', sans-serif", background: "#fff", color: "#111827", transition: "border-color .2s, box-shadow .2s", outline: "none" },
+  searchInput: { width: "100%", padding: "9px 14px 9px 36px", borderRadius: 12, border: "1.5px solid #e5e7eb", fontSize: 14, fontFamily: "'DM Sans', sans-serif", background: "#fff", color: "#111827", transition: "border-color .2s, box-shadow .2s", outline: "none" },
   filterGroup: { display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: "#6b7280" },
-  filterBtn: { padding: "6px 12px", borderRadius: 8, border: "1.5px solid #e5e7eb", background: "#fff", color: "#6b7280", fontSize: 13, fontFamily: "'DM Sans', sans-serif", fontWeight: 500 },
-  sortSelect: { padding: "8px 12px", borderRadius: 10, border: "1.5px solid #e5e7eb", background: "#fff", color: "#374151", fontSize: 13, fontFamily: "'DM Sans', sans-serif", cursor: "pointer" },
+  filterBtn: { padding: "6px 12px", borderRadius: 10, border: "1.5px solid #e5e7eb", background: "#fff", color: "#6b7280", fontSize: 13, fontFamily: "'DM Sans', sans-serif", fontWeight: 500 },
+  sortSelect: { padding: "8px 12px", borderRadius: 12, border: "1.5px solid #e5e7eb", background: "#fff", color: "#374151", fontSize: 13, fontFamily: "'DM Sans', sans-serif", cursor: "pointer" },
   resultCount: { fontSize: 13, color: "#9ca3af", marginBottom: 16 },
   loadingState: { display: "flex", alignItems: "center", gap: 10, color: "#9ca3af", fontSize: 15, padding: "60px 0", justifyContent: "center" },
   emptyState: { display: "flex", flexDirection: "column", alignItems: "center", padding: "80px 0", textAlign: "center" },
-  goBtn: { marginTop: 20, padding: "10px 24px", borderRadius: 10, border: "none", background: "#6366f1", color: "#fff", fontSize: 14, fontFamily: "'DM Sans', sans-serif", cursor: "pointer", fontWeight: 500 },
+  goBtn: { marginTop: 20, padding: "10px 24px", borderRadius: 12, border: "none", background: "#6366f1", color: "#fff", fontSize: 14, fontFamily: "'DM Sans', sans-serif", cursor: "pointer", fontWeight: 500 },
   list: { display: "flex", flexDirection: "column", gap: 12 },
-  jobRow: { background: "#fff", border: "1px solid #e5e7eb", borderRadius: 14, padding: "20px 24px", boxShadow: "0 1px 3px rgba(0,0,0,.04)" },
+  jobRow: { background: "#fff", border: "1px solid #e5e7eb", borderRadius: 24, padding: "20px 24px", boxShadow: "0 1px 3px rgba(0,0,0,.04)" },
   jobTop: { display: "flex", alignItems: "flex-start", gap: 16 },
   jobTitleRow: { display: "flex", alignItems: "center", gap: 10, marginBottom: 8, flexWrap: "wrap" },
-  jobTitle: { fontFamily: "'Syne', sans-serif", fontSize: 17, fontWeight: 700, color: "#111827" },
+  jobTitle: { fontFamily: "'Syne', sans-serif", fontSize: 17, fontWeight: 700, color: "#111827", letterSpacing: "-0.025em" },
   scorePill: { fontSize: 12, fontWeight: 600, padding: "2px 10px", borderRadius: 99, fontFamily: "'Syne', sans-serif" },
   metaRow: { display: "flex", flexWrap: "wrap", gap: 12 },
   metaItem: { display: "flex", alignItems: "center", gap: 5, fontSize: 13, color: "#6b7280" },
   jobActions: { display: "flex", alignItems: "center", gap: 10, flexShrink: 0 },
   matchWrap: { position: "relative", display: "flex", flexDirection: "column", alignItems: "center", gap: 2 },
   matchLabel: { fontSize: 10, color: "#9ca3af", textAlign: "center" },
-  applyBtn: { display: "flex", alignItems: "center", gap: 6, padding: "8px 16px", borderRadius: 9, background: "#6366f1", color: "#fff", fontSize: 13, fontWeight: 500, textDecoration: "none", transition: "all .2s" },
+  applyBtn: { display: "flex", alignItems: "center", gap: 6, padding: "8px 16px", borderRadius: 12, background: "#6366f1", color: "#fff", fontSize: 13, fontWeight: 500, textDecoration: "none", transition: "all .2s" },
   skillsGap: { display: "flex", alignItems: "center", flexWrap: "wrap", gap: 6, marginTop: 12, paddingTop: 12, borderTop: "1px solid #f3f4f6" },
   skillsLabel: { fontSize: 12, color: "#9ca3af", fontWeight: 500 },
-  skillTag: { padding: "2px 10px", borderRadius: 99, background: "rgba(99,102,241,.08)", color: "#6366f1", fontSize: 12, fontWeight: 500, border: "1px solid rgba(99,102,241,.2)" },
+  skillTag: { padding: "2px 10px", borderRadius: 99, background: "#ecfdf5", color: "#059669", fontSize: 12, fontWeight: 500, border: "1px solid rgba(16,185,129,.2)" },
   expandBtn: { marginTop: 12, background: "none", border: "none", color: "#9ca3af", fontSize: 12, cursor: "pointer", fontFamily: "'DM Sans', sans-serif", padding: 0, transition: "color .2s" },
 };
