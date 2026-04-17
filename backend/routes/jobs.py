@@ -4,7 +4,7 @@ from config import users_col, preferences_col, job_alerts_col, job_links_col
 from services.job_fetcher import fetch_jobs
 from services.ai_filter import filter_jobs
 from services.cover_letter import generate_cover_letter
-from services.whatsapp_sender import send_whatsapp
+from services.email_sender import send_email
 from services.rate_limiter import check_and_increment, get_usage
 from datetime import datetime, timezone, timedelta
 from bson import ObjectId
@@ -28,11 +28,11 @@ async def run_job_fetch(user_data: dict = Depends(verify_token)):
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
-    user_id = str(user["_id"])
-    phone   = user.get("phone", "")
+    user_id    = str(user["_id"])
+    user_email = user.get("email", "")
 
-    if not phone:
-        raise HTTPException(status_code=400, detail="Please add your WhatsApp number in Profile first")
+    if not user_email:
+        raise HTTPException(status_code=400, detail="No email found for this account")
 
     prefs = await preferences_col.find_one({"user_id": user_id})
     if not prefs:
@@ -41,12 +41,12 @@ async def run_job_fetch(user_data: dict = Depends(verify_token)):
     your_name        = os.getenv("YOUR_NAME", user.get("name", "Candidate"))
     use_ai_filter    = prefs.get("use_ai_filter",    True)
     use_cover_letter = prefs.get("use_cover_letter", True)
-    send_wa          = prefs.get("send_whatsapp",    True)
+    send_email_toggle = prefs.get("send_whatsapp",   True)  # reusing same toggle for email
 
-    print(f"[jobs/run] Fetching jobs for {user.get('name')}...")
-    print(f"[jobs/run] Toggles -> AI:{use_ai_filter} | CoverLetter:{use_cover_letter} | WhatsApp:{send_wa}")
+    print(f"[jobs/run] Fetching jobs for {user.get('name')} → {user_email}")
+    print(f"[jobs/run] Toggles → AI:{use_ai_filter} | CoverLetter:{use_cover_letter} | Email:{send_email_toggle}")
 
-    # rate limit checks
+    # ── Rate limit checks ────────────────────────────────
     jsearch_check = await check_and_increment("jsearch", cost=1)
     if not jsearch_check["allowed"]:
         return {"message": f"⚠️ {jsearch_check['reason']}", "jobs_sent": 0}
@@ -56,19 +56,14 @@ async def run_job_fetch(user_data: dict = Depends(verify_token)):
         if not groq_check["allowed"]:
             return {"message": f"⚠️ {groq_check['reason']}", "jobs_sent": 0}
 
-    if send_wa:
-        twilio_check = await check_and_increment("twilio", cost=6)
-        if not twilio_check["allowed"]:
-            return {"message": f"⚠️ {twilio_check['reason']}", "jobs_sent": 0}
-
     print(f"[jobs/run] Rate limits OK — JSearch {jsearch_check['daily_used']}/3 today")
 
-    # Step 1: Fetch
+    # ── Step 1: Fetch ────────────────────────────────────
     jobs = fetch_jobs(job_title=prefs["job_title"], location=prefs["location"])
     if not jobs:
         return {"message": "No jobs found right now. Try again later.", "jobs_sent": 0}
 
-    # Step 2: Deduplicate
+    # ── Step 2: Deduplicate ──────────────────────────────
     sent_cursor  = job_links_col.find({"user_id": user_id}, {"link": 1})
     already_sent = set()
     async for doc in sent_cursor:
@@ -92,7 +87,7 @@ async def run_job_fetch(user_data: dict = Depends(verify_token)):
     if not jobs:
         return {"message": "All matching jobs were already sent to you. Check back tomorrow!", "jobs_sent": 0}
 
-    # Step 3: AI filter
+    # ── Step 3: AI filter ────────────────────────────────
     if use_ai_filter:
         print("[jobs/run] Running AI filter...")
         jobs = filter_jobs(jobs, prefs)
@@ -101,21 +96,21 @@ async def run_job_fetch(user_data: dict = Depends(verify_token)):
     else:
         print("[jobs/run] AI filter SKIPPED")
 
-    # Step 4: Cover letters
+    # ── Step 4: Cover letters ────────────────────────────
     if use_cover_letter:
         print("[jobs/run] Generating cover letters...")
         jobs = [generate_cover_letter(job, prefs, your_name) for job in jobs]
     else:
         print("[jobs/run] Cover letter SKIPPED")
 
-    # Step 5: WhatsApp
-    if send_wa:
-        print("[jobs/run] Sending WhatsApp...")
-        send_whatsapp(jobs, phone, prefs=prefs)
+    # ── Step 5: Send email ───────────────────────────────
+    if send_email_toggle:
+        print(f"[jobs/run] Sending email to {user_email}...")
+        send_email(jobs, user_email, prefs=prefs)
     else:
-        print("[jobs/run] WhatsApp SKIPPED — saving to history only")
+        print("[jobs/run] Email SKIPPED — saving to history only")
 
-    # Step 6: Save full job data
+    # ── Step 6: Save full job data ───────────────────────
     now  = datetime.now(IST).replace(tzinfo=None)
     docs = [
         {
@@ -134,7 +129,7 @@ async def run_job_fetch(user_data: dict = Depends(verify_token)):
     if docs:
         await job_alerts_col.insert_many(docs)
 
-    # Step 7: Save lightweight links
+    # ── Step 7: Save links for dedup ─────────────────────
     link_docs = [
         {"user_id": user_id, "link": job.get("apply_link", "").strip(), "sent_at": now}
         for job in jobs if job.get("apply_link", "").strip()
@@ -143,11 +138,11 @@ async def run_job_fetch(user_data: dict = Depends(verify_token)):
         await job_links_col.insert_many(link_docs)
         print(f"[jobs/run] Saved {len(link_docs)} links for dedup")
 
-    action = "sent to your WhatsApp" if send_wa else "saved to History"
+    action = "sent to your email" if send_email_toggle else "saved to History"
     return {"message": f"✅ {len(jobs)} jobs {action}!", "jobs_sent": len(jobs)}
 
 
-# DELETE all history
+# ── DELETE all history ───────────────────────────────────
 @router.delete("/history/all")
 async def delete_all_job_alerts(user_data: dict = Depends(verify_token)):
     firebase_uid = user_data.get("uid")
@@ -158,7 +153,7 @@ async def delete_all_job_alerts(user_data: dict = Depends(verify_token)):
     return {"message": f"Deleted {result.deleted_count} job alerts"}
 
 
-# DELETE single alert
+# ── DELETE single alert ──────────────────────────────────
 @router.delete("/history/{alert_id}")
 async def delete_job_alert(alert_id: str, user_data: dict = Depends(verify_token)):
     firebase_uid = user_data.get("uid")
@@ -174,7 +169,7 @@ async def delete_job_alert(alert_id: str, user_data: dict = Depends(verify_token
     return {"message": "Job deleted successfully"}
 
 
-# GET history
+# ── GET history ──────────────────────────────────────────
 @router.get("/history")
 async def get_job_history(user_data: dict = Depends(verify_token)):
     firebase_uid = user_data.get("uid")
@@ -188,13 +183,13 @@ async def get_job_history(user_data: dict = Depends(verify_token)):
     return {"count": len(alerts), "alerts": alerts}
 
 
-# GET usage
+# ── GET usage ────────────────────────────────────────────
 @router.get("/usage")
 async def api_usage(user_data: dict = Depends(verify_token)):
     return await get_usage()
 
 
-# GET scheduler status
+# ── GET scheduler status ─────────────────────────────────
 @router.get("/scheduler-status")
 async def scheduler_status(user_data: dict = Depends(verify_token)):
     return {

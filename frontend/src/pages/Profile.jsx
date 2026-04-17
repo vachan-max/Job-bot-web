@@ -223,39 +223,7 @@ export default function Profile() {
             </section>
 
             {/* WhatsApp */}
-            <section style={s.card} className="card">
-              <h2 style={s.cardTitle}>WhatsApp Number</h2>
-              <p style={s.cardSub}>Job alerts will be sent to this number daily</p>
-
-              {phone && (
-                <div style={{ display:"flex", alignItems:"center", gap:8, marginTop:16, padding:"8px 12px",
-                  borderRadius:12, background:"#ecfdf5", border:"1px solid rgba(16,185,129,.2)", color:"#059669" }}>
-                  <IconWhatsapp />
-                  <span style={{ fontSize:13, fontWeight:500 }}>Currently: {phone}</span>
-                </div>
-              )}
-
-              <form onSubmit={handleSavePhone} style={{ marginTop:20 }}>
-                <label style={s.label}><IconPhone /> Mobile number (India)</label>
-                <div style={{ display:"flex", alignItems:"stretch" }}>
-                  <span style={{ display:"flex", alignItems:"center", padding:"0 14px", background:"#f3f4f6",
-                    border:"1.5px solid #e5e7eb", borderRight:"none", borderRadius:"12px 0 0 12px",
-                    fontSize:14, color:"#6b7280", fontWeight:500 }}>+91</span>
-                  <input className="field-input"
-                    style={{ ...s.input, borderRadius:"0 12px 12px 0", borderLeft:"none" }}
-                    placeholder="9876543210" value={rawPhone} maxLength={10}
-                    onChange={e => { setRawPhone(e.target.value.replace(/\D/g,"").slice(0,10)); setPhoneError(""); }} />
-                </div>
-                {phoneError && <p style={s.errorText}>{phoneError}</p>}
-                <p style={s.hintText}>
-                  Make sure you joined the Twilio sandbox — send&nbsp;
-                  <code style={s.code}>join &lt;two-words&gt;</code> to the Twilio number.
-                </p>
-                <button type="submit" className="btn-save" disabled={savingPhone} style={s.btnSave}>
-                  {savingPhone ? <><IconLoader /> Saving...</> : phoneSaved ? <><IconCheck /> Saved!</> : "Save Number"}
-                </button>
-              </form>
-            </section>
+     
           </div>
 
           {/* RIGHT */}
