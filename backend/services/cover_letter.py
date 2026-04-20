@@ -77,8 +77,10 @@ LETTER: <all 3 sentences on a single line>
             if len(parts) > 1:
                 cover_letter = parts[1].strip().replace("\n", " ")
 
-        job["match_percent"] = match_percent
-        job["cover_letter"]  = cover_letter
+        # Only overwrite match_percent if AI filter didn't already set it
+        if not job.get("match_percent"):
+            job["match_percent"] = match_percent
+        job["cover_letter"] = cover_letter
 
         print(f"[cover_letter] {job_title} at {company} → Match: {match_percent}%")
 

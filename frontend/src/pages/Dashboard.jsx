@@ -49,9 +49,10 @@ const IconHistory = () => (
     <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/>
   </svg>
 );
-const IconWhatsapp = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413Z"/>
+const IconEmail = () => (
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+    <polyline points="22,6 12,13 2,6"/>
   </svg>
 );
 
@@ -71,15 +72,15 @@ export default function Dashboard() {
     use_resume_match: true,
     send_whatsapp   : true,
   });
-  const [loadingPrefs,  setLoadingPrefs]  = useState(true);
-  const [savingPrefs,   setSavingPrefs]   = useState(false);
-  const [savedOk,       setSavedOk]       = useState(false);
-  const [running,       setRunning]       = useState(false);
-  const [runResult,     setRunResult]     = useState(null);
-  const [schedulerStatus, setSchedulerStatus] = useState(null);
-  const [recentJobs,    setRecentJobs]    = useState([]);
-  const [loadingHistory, setLoadingHistory] = useState(true);
-  const [usage,         setUsage]         = useState(null);
+  const [loadingPrefs,     setLoadingPrefs]     = useState(true);
+  const [savingPrefs,      setSavingPrefs]      = useState(false);
+  const [savedOk,          setSavedOk]          = useState(false);
+  const [running,          setRunning]          = useState(false);
+  const [runResult,        setRunResult]        = useState(null);
+  const [schedulerStatus,  setSchedulerStatus]  = useState(null);
+  const [recentJobs,       setRecentJobs]       = useState([]);
+  const [loadingHistory,   setLoadingHistory]   = useState(true);
+  const [usage,            setUsage]            = useState(null);
 
   useEffect(() => {
     fetchPrefs();
@@ -136,13 +137,14 @@ export default function Dashboard() {
       alert("Failed to save preferences.");
     } finally { setSavingPrefs(false); }
   }
+
   function to12Hour(time24) {
-  if (!time24) return "";
-  const [h, m] = time24.split(":").map(Number);
-  const period = h >= 12 ? "PM" : "AM";
-  const hour   = h % 12 || 12;
-  return `${hour}:${m.toString().padStart(2, "0")} ${period}`;
-}
+    if (!time24) return "";
+    const [h, m] = time24.split(":").map(Number);
+    const period = h >= 12 ? "PM" : "AM";
+    const hour   = h % 12 || 12;
+    return `${hour}:${m.toString().padStart(2, "0")} ${period}`;
+  }
 
   async function handleRunNow() {
     try {
@@ -211,7 +213,7 @@ export default function Dashboard() {
               {user?.displayName?.split(" ")[0] || "Profile"}
             </button>
             <button style={{ ...styles.navLink, color: "#ef4444" }} className="btn-logout" onClick={handleSignOut}>
-              <IconLogout /> Sign out 
+              <IconLogout /> Sign out
             </button>
           </div>
         </div>
@@ -246,7 +248,7 @@ export default function Dashboard() {
                 <div style={styles.fieldRow}>
                   <FieldGroup icon={<IconBriefcase />} label="Job Title" htmlFor="job_title">
                     <input id="job_title" className="field-input" style={styles.input}
-                      placeholder="e.g. AI Engineer" value={prefs.job_title}
+                      placeholder="e.g. Full Stack Developer" value={prefs.job_title}
                       onChange={e => setPrefs({ ...prefs, job_title: e.target.value })} />
                   </FieldGroup>
                   <FieldGroup icon={<IconMap />} label="Location" htmlFor="location">
@@ -270,7 +272,7 @@ export default function Dashboard() {
 
                 <FieldGroup icon={<IconBriefcase />} label="Key Skills (comma separated)" htmlFor="skills">
                   <input id="skills" className="field-input" style={styles.input}
-                    placeholder="e.g. Python, Machine Learning, FastAPI" value={prefs.skills}
+                    placeholder="e.g. React, Node.js, MongoDB" value={prefs.skills}
                     onChange={e => setPrefs({ ...prefs, skills: e.target.value })} />
                 </FieldGroup>
 
@@ -301,7 +303,7 @@ export default function Dashboard() {
                       { key:"use_ai_filter",    label:"AI Scoring & Filter",  desc:"Score jobs with Groq and filter by min score" },
                       { key:"use_cover_letter", label:"Cover Letter",          desc:"Generate a tailored cover letter per job" },
                       { key:"use_resume_match", label:"Resume Match %",        desc:"Calculate how well job matches your resume" },
-                      { key:"send_whatsapp",    label:"WhatsApp Delivery",     desc:"Send results to your WhatsApp number" },
+                      { key:"send_whatsapp",    label:"Email Delivery",        desc:"Send job results to your email" },
                     ].map(({ key, label, desc }) => (
                       <div key={key} style={{ display:"flex", alignItems:"center", gap:12 }}>
                         <div style={{ flex:1 }}>
@@ -339,10 +341,10 @@ export default function Dashboard() {
             <section style={{ ...styles.card, textAlign:"center", paddingTop:32, paddingBottom:32 }} className="card">
               <div style={{ width:52, height:52, borderRadius:18, background:"#ecfdf5", color:"#059669",
                 display:"flex", alignItems:"center", justifyContent:"center", margin:"0 auto 16px" }}>
-                <IconWhatsapp />
+                <IconEmail />
               </div>
               <h2 style={styles.cardTitle}>Send Jobs Now</h2>
-              <p style={styles.cardSub}>Manually trigger a job search and send results to WhatsApp.</p>
+              <p style={styles.cardSub}>Manually trigger a job search and send results to your email.</p>
               <button className="btn-run" onClick={handleRunNow} disabled={running} style={styles.btnRun}>
                 {running ? <><IconLoader /> Fetching jobs...</> : <><IconPlay /> Run Now</>}
               </button>
@@ -350,7 +352,7 @@ export default function Dashboard() {
                 <div style={{ ...styles.runResult,
                   background  : runResult.success ? "rgba(16,185,129,.08)" : "rgba(239,68,68,.08)",
                   borderColor : runResult.success ? "rgba(16,185,129,.3)"  : "rgba(239,68,68,.3)",
-                  color       : runResult.success ? "#059669"             : "#dc2626" }}>
+                  color       : runResult.success ? "#059669"              : "#dc2626" }}>
                   {runResult.success ? <IconCheck /> : "✕"}&nbsp;
                   {runResult.message}
                   {runResult.jobs_sent != null && ` (${runResult.jobs_sent} jobs sent)`}
@@ -366,7 +368,7 @@ export default function Dashboard() {
                 {[
                   { label:"Job searches (JSearch)", key:"jsearch" },
                   { label:"AI calls (Groq)",         key:"groq"    },
-                  { label:"WhatsApp messages",        key:"twilio"  },
+                  { label:"Emails sent",             key:"email"   },
                 ].map(({ label, key }) => {
                   const u = usage[key] || { daily_used:0, daily_limit:1, weekly_used:0, weekly_limit:1 };
                   const { pct, col } = usageBar(u.daily_used, u.daily_limit);
@@ -404,9 +406,11 @@ export default function Dashboard() {
                     <div key={i} className="job-card" style={styles.jobCard}>
                       <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:4 }}>
                         <span style={{ fontWeight:500, fontSize:14, color:"#111827" }}>{job.job_title || "Job"}</span>
-                        <span className="score-pill" style={{ background:`${scoreColor(job.ai_score)}18`, color:scoreColor(job.ai_score) }}>
-                          {job.ai_score ?? "--"}
-                        </span>
+                        {job.ai_score > 0 && (
+                          <span className="score-pill" style={{ background:`${scoreColor(job.ai_score)}18`, color:scoreColor(job.ai_score) }}>
+                            {job.ai_score}
+                          </span>
+                        )}
                       </div>
                       <div style={{ display:"flex", gap:6, fontSize:12, color:"#6b7280" }}>
                         <span>{job.company || "Company"}</span>
@@ -443,32 +447,32 @@ function FieldGroup({ icon, label, htmlFor, children }) {
 }
 
 const styles = {
-  root      : { minHeight:"100vh", background:"linear-gradient(to bottom right, #f8fafc, #ffffff)", fontFamily:"'DM Sans',sans-serif", color:"#111827" },
-  nav       : { background:"#fff", borderBottom:"1px solid #e5e7eb", position:"sticky", top:0, zIndex:10 },
-  navInner  : { maxWidth:1200, margin:"0 auto", padding:"0 24px", height:60, display:"flex", alignItems:"center", justifyContent:"space-between" },
-  logo      : { fontFamily:"'Syne',sans-serif", fontWeight:700, fontSize:22, color:"#111827", letterSpacing:"-1px" },
-  navLinks  : { display:"flex", alignItems:"center", gap:8 },
-  navLink   : { display:"flex", alignItems:"center", gap:6, padding:"6px 12px", borderRadius:12, border:"none", background:"transparent", color:"#6b7280", fontSize:14, fontFamily:"'DM Sans',sans-serif", cursor:"pointer", opacity:0.8, transition:"all .2s" },
-  avatar    : { width:26, height:26, borderRadius:"50%", background:"#6366f1", color:"#fff", display:"flex", alignItems:"center", justifyContent:"center", fontSize:11, fontWeight:600 },
-  main      : { maxWidth:1200, margin:"0 auto", padding:"32px 24px" },
-  greeting  : { display:"flex", alignItems:"flex-end", justifyContent:"space-between", marginBottom:28, flexWrap:"wrap", gap:12 },
-  greetSub  : { fontSize:14, color:"#6b7280", marginBottom:2 },
-  greetName : { fontFamily:"'Syne',sans-serif", fontSize:32, fontWeight:700, color:"#111827", letterSpacing:"-0.025em" },
+  root       : { minHeight:"100vh", background:"linear-gradient(to bottom right, #f8fafc, #ffffff)", fontFamily:"'DM Sans',sans-serif", color:"#111827" },
+  nav        : { background:"#fff", borderBottom:"1px solid #e5e7eb", position:"sticky", top:0, zIndex:10 },
+  navInner   : { maxWidth:1200, margin:"0 auto", padding:"0 24px", height:60, display:"flex", alignItems:"center", justifyContent:"space-between" },
+  logo       : { fontFamily:"'Syne',sans-serif", fontWeight:700, fontSize:22, color:"#111827", letterSpacing:"-1px" },
+  navLinks   : { display:"flex", alignItems:"center", gap:8 },
+  navLink    : { display:"flex", alignItems:"center", gap:6, padding:"6px 12px", borderRadius:12, border:"none", background:"transparent", color:"#6b7280", fontSize:14, fontFamily:"'DM Sans',sans-serif", cursor:"pointer", opacity:0.8, transition:"all .2s" },
+  avatar     : { width:26, height:26, borderRadius:"50%", background:"#6366f1", color:"#fff", display:"flex", alignItems:"center", justifyContent:"center", fontSize:11, fontWeight:600 },
+  main       : { maxWidth:1200, margin:"0 auto", padding:"32px 24px" },
+  greeting   : { display:"flex", alignItems:"flex-end", justifyContent:"space-between", marginBottom:28, flexWrap:"wrap", gap:12 },
+  greetSub   : { fontSize:14, color:"#6b7280", marginBottom:2 },
+  greetName  : { fontFamily:"'Syne',sans-serif", fontSize:32, fontWeight:700, color:"#111827", letterSpacing:"-0.025em" },
   statusBadge: { display:"flex", alignItems:"center", gap:8, padding:"6px 14px", borderRadius:99, background:"#ecfdf5", color:"#059669", fontSize:13, fontWeight:500, border:"1px solid rgba(16,185,129,.2)" },
-  grid      : { display:"grid", gridTemplateColumns:"1fr 380px", gap:20, alignItems:"start" },
-  card      : { background:"#fff", borderRadius:24, border:"1px solid #e5e7eb", padding:28, boxShadow:"0 4px 12px rgba(0,0,0,.03)" },
-  cardHeader: { marginBottom:24 },
-  cardTitle : { fontFamily:"'Syne',sans-serif", fontSize:18, fontWeight:700, color:"#111827", marginBottom:4, letterSpacing: "-0.025em" },
-  cardSub   : { fontSize:13, color:"#6b7280" },
+  grid       : { display:"grid", gridTemplateColumns:"1fr 380px", gap:20, alignItems:"start" },
+  card       : { background:"#fff", borderRadius:24, border:"1px solid #e5e7eb", padding:28, boxShadow:"0 4px 12px rgba(0,0,0,.03)" },
+  cardHeader : { marginBottom:24 },
+  cardTitle  : { fontFamily:"'Syne',sans-serif", fontSize:18, fontWeight:700, color:"#111827", marginBottom:4, letterSpacing:"-0.025em" },
+  cardSub    : { fontSize:13, color:"#6b7280" },
   loadingState: { display:"flex", alignItems:"center", gap:8, color:"#9ca3af", fontSize:14, padding:"20px 0" },
-  form      : { display:"flex", flexDirection:"column", gap:20 },
-  fieldRow  : { display:"flex", gap:16, flexWrap:"wrap" },
-  input     : { width:"100%", padding:"10px 14px", borderRadius:12, border:"1.5px solid #e5e7eb", fontSize:14, color:"#111827", background:"#fafafa", fontFamily:"'DM Sans',sans-serif", transition:"border-color .2s, box-shadow .2s" },
+  form       : { display:"flex", flexDirection:"column", gap:20 },
+  fieldRow   : { display:"flex", gap:16, flexWrap:"wrap" },
+  input      : { width:"100%", padding:"10px 14px", borderRadius:12, border:"1.5px solid #e5e7eb", fontSize:14, color:"#111827", background:"#fafafa", fontFamily:"'DM Sans',sans-serif", transition:"border-color .2s, box-shadow .2s" },
   togglesCard: { background:"#f8f9fc", border:"1px solid #e5e7eb", borderRadius:16, padding:"16px 20px" },
-  btnSave   : { display:"flex", alignItems:"center", gap:8, padding:"11px 24px", borderRadius:12, border:"none", background:"#6366f1", color:"#fff", fontSize:14, fontWeight:500, fontFamily:"'DM Sans',sans-serif", cursor:"pointer", transition:"all .2s" },
-  rightCol  : { display:"flex", flexDirection:"column", gap:20 },
-  btnRun    : { display:"flex", alignItems:"center", justifyContent:"center", gap:8, width:"100%", padding:"13px", marginTop:20, borderRadius:14, border:"none", background:"#ecfdf5", color:"#059669", fontSize:15, fontWeight:600, fontFamily:"'DM Sans',sans-serif", cursor:"pointer", transition:"all .2s" },
-  runResult : { display:"flex", alignItems:"center", gap:6, marginTop:14, padding:"10px 14px", borderRadius:12, border:"1px solid", fontSize:13, fontWeight:500, textAlign:"left" },
-  btnHistory: { padding:"4px 12px", borderRadius:10, border:"1.5px solid #e5e7eb", background:"transparent", color:"#6b7280", fontSize:13, fontFamily:"'DM Sans',sans-serif", cursor:"pointer", transition:"all .2s", fontWeight:500 },
-  jobCard   : { padding:"12px 14px", borderRadius:12, border:"1px solid #e5e7eb", transition:"all .2s", cursor:"default" },
+  btnSave    : { display:"flex", alignItems:"center", gap:8, padding:"11px 24px", borderRadius:12, border:"none", background:"#6366f1", color:"#fff", fontSize:14, fontWeight:500, fontFamily:"'DM Sans',sans-serif", cursor:"pointer", transition:"all .2s" },
+  rightCol   : { display:"flex", flexDirection:"column", gap:20 },
+  btnRun     : { display:"flex", alignItems:"center", justifyContent:"center", gap:8, width:"100%", padding:"13px", marginTop:20, borderRadius:14, border:"none", background:"#ecfdf5", color:"#059669", fontSize:15, fontWeight:600, fontFamily:"'DM Sans',sans-serif", cursor:"pointer", transition:"all .2s" },
+  runResult  : { display:"flex", alignItems:"center", gap:6, marginTop:14, padding:"10px 14px", borderRadius:12, border:"1px solid", fontSize:13, fontWeight:500, textAlign:"left" },
+  btnHistory : { padding:"4px 12px", borderRadius:10, border:"1.5px solid #e5e7eb", background:"transparent", color:"#6b7280", fontSize:13, fontFamily:"'DM Sans',sans-serif", cursor:"pointer", transition:"all .2s", fontWeight:500 },
+  jobCard    : { padding:"12px 14px", borderRadius:12, border:"1px solid #e5e7eb", transition:"all .2s", cursor:"default" },
 };

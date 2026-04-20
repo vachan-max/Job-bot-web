@@ -64,6 +64,7 @@ Reply with ONLY a number 0-100. Nothing else."""
 
     try:
         raw_pref = _ask_groq(pref_prompt)
+        print(f"[ai_filter] Raw Groq response: '{raw_pref}'")
         ai_score = _parse_score(raw_pref, default=60)
         print(f"[ai_filter] '{title}' at '{company}' -> AI score: {ai_score}")
     except Exception as e:
@@ -116,7 +117,7 @@ def filter_jobs(jobs: list, preferences: dict) -> list:
     scored   = [score_job(job, preferences) for job in jobs]
     passed   = [j for j in scored if j["ai_score"] >= min_score]
     rejected = [j for j in scored if j["ai_score"] <  min_score]
-
+    
     print(f"[ai_filter] {len(passed)} passed, {len(rejected)} rejected")
     for j in rejected:
         print(f"[ai_filter]   REJECTED: '{j.get('job_title')}' "
@@ -124,4 +125,4 @@ def filter_jobs(jobs: list, preferences: dict) -> list:
               f"(min={min_score})")
 
     passed.sort(key=lambda x: x["ai_score"], reverse=True)
-    return passed[:5]
+    return passed[:10]

@@ -17,7 +17,7 @@ def fetch_jobs(job_title: str, location: str, num_results: int = 10, page: int =
     url = "https://jsearch.p.rapidapi.com/search"
 
     # If no page specified, rotate randomly so each run gets fresh results
-    selected_page = page if page is not None else random.randint(1, 5)
+    selected_page = page if page is not None else random.randint(1, 1)
 
     querystring = {
         "query"      : f"{job_title} in {location}",

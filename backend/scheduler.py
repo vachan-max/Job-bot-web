@@ -37,19 +37,14 @@ async def run_for_user(user: dict, prefs: dict):
         return
 
     try:
-        # ── Rate limit checks ────────────────────────────
-        jsearch_check = await check_and_increment("jsearch", cost=1)
+        # ── Step 1: JSearch rate limit + Fetch ───────────
+        jsearch_check = await check_and_increment("jsearch", cost=1, user_id=user_id)
         if not jsearch_check["allowed"]:
             print(f"[scheduler] {jsearch_check['reason']} — skipping {name}")
             return
 
-        if use_ai_filter or use_cover_letter:
-            groq_check = await check_and_increment("groq", cost=10)
-            if not groq_check["allowed"]:
-                print(f"[scheduler] {groq_check['reason']} — skipping {name}")
-                return
+        print(f"[scheduler] JSearch {jsearch_check['daily_used']}/3 today for {name}")
 
-        # ── Step 1: Fetch ─────────────────────────────────
         jobs = fetch_jobs(job_title=prefs["job_title"], location=prefs["location"])
         if not jobs:
             print(f"[scheduler] No jobs found for {name}")
@@ -78,23 +73,37 @@ async def run_for_user(user: dict, prefs: dict):
             print(f"[scheduler] No new jobs for {name} today")
             return
 
-        # ── Step 3: AI filter ─────────────────────────────
+        # ── Step 3: AI filter — only if toggle ON ────────
         if use_ai_filter:
+            groq_check = await check_and_increment("groq", cost=5, user_id=user_id)
+            if not groq_check["allowed"]:
+                print(f"[scheduler] {groq_check['reason']} — skipping AI filter for {name}")
+                return
             jobs = filter_jobs(jobs, prefs)
             if not jobs:
                 print(f"[scheduler] No jobs passed min_score for {name}")
                 return
+            print(f"[scheduler] AI filter done — {len(jobs)} jobs passed")
         else:
             print(f"[scheduler] AI filter SKIPPED")
 
-        # ── Step 4: Cover letters ─────────────────────────
+        # ── Step 4: Cover letters — only if toggle ON ─────
         if use_cover_letter:
+            cover_check = await check_and_increment("groq", cost=5, user_id=user_id)
+            if not cover_check["allowed"]:
+                print(f"[scheduler] {cover_check['reason']} — skipping cover letters for {name}")
+                return
             jobs = [generate_cover_letter(job, prefs, your_name) for job in jobs]
+            print(f"[scheduler] Cover letters generated")
         else:
             print(f"[scheduler] Cover letter SKIPPED")
 
-        # ── Step 5: Send email ────────────────────────────
+        # ── Step 5: Email — only if toggle ON ────────────
         if send_email_toggle:
+            email_check = await check_and_increment("email", cost=1, user_id=user_id)
+            if not email_check["allowed"]:
+                print(f"[scheduler] {email_check['reason']} — skipping email for {name}")
+                return
             print(f"[scheduler] Sending email to {user_email}...")
             send_email(jobs, user_email, prefs=prefs)
         else:
@@ -126,6 +135,7 @@ async def run_for_user(user: dict, prefs: dict):
         ]
         if link_docs:
             await job_links_col.insert_many(link_docs)
+            print(f"[scheduler] Saved {len(link_docs)} links for dedup")
 
         action = "sent via email" if send_email_toggle else "saved to history"
         print(f"[scheduler] Done for {name} — {len(jobs)} jobs {action}")

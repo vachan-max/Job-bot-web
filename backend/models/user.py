@@ -2,7 +2,7 @@ from pydantic import BaseModel
 from typing import Optional
 
 class UserProfile(BaseModel):
-    phone           : Optional[str] = ""
+  
     resume_filename : Optional[str] = None
 
 class JobPreferences(BaseModel):

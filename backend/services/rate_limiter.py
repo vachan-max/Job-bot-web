@@ -2,18 +2,18 @@ from datetime import datetime, timedelta
 from config import rate_limits_col
 
 LIMITS = {
-    "jsearch": {"daily": 70,  "weekly": 100},
-    "groq"   : {"daily": 180, "weekly": 300},
-    "twilio" : {"daily": 80, "weekly": 600},
+    "jsearch": {"daily": 6,   "weekly": 15},
+    "groq"   : {"daily": 100, "weekly": 300},
+    "email"  : {"daily": 20,  "weekly": 100},
 }
 
-
-async def check_and_increment(service: str, cost: int = 1) -> dict:
+async def check_and_increment(service: str, cost: int = 1, user_id: str = "global") -> dict:
     now        = datetime.utcnow()
     today      = now.strftime("%Y-%m-%d")
     week_start = (now - timedelta(days=now.weekday())).strftime("%Y-%m-%d")
 
-    doc = await rate_limits_col.find_one({"service": service}) or {}
+    # Each user+service gets its own document
+    doc = await rate_limits_col.find_one({"service": service, "user_id": user_id}) or {}
 
     daily_count  = doc.get("daily_count",  0) if doc.get("date")       == today      else 0
     weekly_count = doc.get("weekly_count", 0) if doc.get("week_start") == week_start else 0
@@ -33,9 +33,10 @@ async def check_and_increment(service: str, cost: int = 1) -> dict:
         }
 
     await rate_limits_col.update_one(
-        {"service": service},
+        {"service": service, "user_id": user_id},
         {"$set": {
             "service"      : service,
+            "user_id"      : user_id,
             "date"         : today,
             "week_start"   : week_start,
             "daily_count"  : daily_count  + cost,
@@ -52,13 +53,14 @@ async def check_and_increment(service: str, cost: int = 1) -> dict:
     }
 
 
-async def get_usage() -> dict:
+async def get_usage(user_id: str = "global") -> dict:
     now        = datetime.utcnow()
     today      = now.strftime("%Y-%m-%d")
     week_start = (now - timedelta(days=now.weekday())).strftime("%Y-%m-%d")
 
     usage = {}
-    async for doc in rate_limits_col.find():
+
+    async for doc in rate_limits_col.find({"user_id": user_id}):
         service = doc.get("service")
         limits  = LIMITS.get(service, {"daily": 999, "weekly": 9999})
         usage[service] = {

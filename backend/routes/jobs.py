@@ -38,27 +38,21 @@ async def run_job_fetch(user_data: dict = Depends(verify_token)):
     if not prefs:
         raise HTTPException(status_code=400, detail="Please set your job preferences first")
 
-    your_name        = os.getenv("YOUR_NAME", user.get("name", "Candidate"))
-    use_ai_filter    = prefs.get("use_ai_filter",    True)
-    use_cover_letter = prefs.get("use_cover_letter", True)
-    send_email_toggle = prefs.get("send_whatsapp",   True)  # reusing same toggle for email
+    your_name         = os.getenv("YOUR_NAME", user.get("name", "Candidate"))
+    use_ai_filter     = prefs.get("use_ai_filter",    True)
+    use_cover_letter  = prefs.get("use_cover_letter", True)
+    send_email_toggle = prefs.get("send_whatsapp",    True)
 
     print(f"[jobs/run] Fetching jobs for {user.get('name')} → {user_email}")
     print(f"[jobs/run] Toggles → AI:{use_ai_filter} | CoverLetter:{use_cover_letter} | Email:{send_email_toggle}")
 
-    # ── Rate limit checks ────────────────────────────────
-    jsearch_check = await check_and_increment("jsearch", cost=1)
+    # ── Step 1: JSearch rate limit + Fetch ───────────────
+    jsearch_check = await check_and_increment("jsearch", cost=1, user_id=user_id)
     if not jsearch_check["allowed"]:
         return {"message": f"⚠️ {jsearch_check['reason']}", "jobs_sent": 0}
 
-    if use_ai_filter or use_cover_letter:
-        groq_check = await check_and_increment("groq", cost=10)
-        if not groq_check["allowed"]:
-            return {"message": f"⚠️ {groq_check['reason']}", "jobs_sent": 0}
+    print(f"[jobs/run] JSearch {jsearch_check['daily_used']}/3 today")
 
-    print(f"[jobs/run] Rate limits OK — JSearch {jsearch_check['daily_used']}/3 today")
-
-    # ── Step 1: Fetch ────────────────────────────────────
     jobs = fetch_jobs(job_title=prefs["job_title"], location=prefs["location"])
     if not jobs:
         return {"message": "No jobs found right now. Try again later.", "jobs_sent": 0}
@@ -87,8 +81,11 @@ async def run_job_fetch(user_data: dict = Depends(verify_token)):
     if not jobs:
         return {"message": "All matching jobs were already sent to you. Check back tomorrow!", "jobs_sent": 0}
 
-    # ── Step 3: AI filter ────────────────────────────────
+    # ── Step 3: AI filter — only increment if toggle ON ──
     if use_ai_filter:
+        groq_check = await check_and_increment("groq", cost=5, user_id=user_id)
+        if not groq_check["allowed"]:
+            return {"message": f"⚠️ {groq_check['reason']}", "jobs_sent": 0}
         print("[jobs/run] Running AI filter...")
         jobs = filter_jobs(jobs, prefs)
         if not jobs:
@@ -96,15 +93,21 @@ async def run_job_fetch(user_data: dict = Depends(verify_token)):
     else:
         print("[jobs/run] AI filter SKIPPED")
 
-    # ── Step 4: Cover letters ────────────────────────────
+    # ── Step 4: Cover letters — only increment if toggle ON
     if use_cover_letter:
+        cover_check = await check_and_increment("groq", cost=5, user_id=user_id)
+        if not cover_check["allowed"]:
+            return {"message": f"⚠️ {cover_check['reason']}", "jobs_sent": 0}
         print("[jobs/run] Generating cover letters...")
         jobs = [generate_cover_letter(job, prefs, your_name) for job in jobs]
     else:
         print("[jobs/run] Cover letter SKIPPED")
 
-    # ── Step 5: Send email ───────────────────────────────
+    # ── Step 5: Email — only increment if toggle ON ───────
     if send_email_toggle:
+        email_check = await check_and_increment("email", cost=1, user_id=user_id)
+        if not email_check["allowed"]:
+            return {"message": f"⚠️ {email_check['reason']}", "jobs_sent": 0}
         print(f"[jobs/run] Sending email to {user_email}...")
         send_email(jobs, user_email, prefs=prefs)
     else:
@@ -186,7 +189,11 @@ async def get_job_history(user_data: dict = Depends(verify_token)):
 # ── GET usage ────────────────────────────────────────────
 @router.get("/usage")
 async def api_usage(user_data: dict = Depends(verify_token)):
-    return await get_usage()
+    firebase_uid = user_data.get("uid")
+    user = await users_col.find_one({"firebase_uid": firebase_uid})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return await get_usage(user_id=str(user["_id"]))
 
 
 # ── GET scheduler status ─────────────────────────────────
