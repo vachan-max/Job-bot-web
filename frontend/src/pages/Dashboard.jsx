@@ -181,142 +181,180 @@ export default function Dashboard() {
     <div style={styles.root}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=Syne:wght@600;700&display=swap');
+        
         * { box-sizing: border-box; margin: 0; padding: 0; }
+        
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
         @keyframes spin  { to { transform: rotate(360deg); } }
         @keyframes fadeUp{ from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
         @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.5} }
-        .card { animation: fadeUp .35s ease both; }
+        
+        .card { animation: fadeUp .35s ease both; transition: transform 0.2s ease, box-shadow 0.2s ease; }
+        .card:hover { transform: translateY(-2px); box-shadow: 0 10px 25px -5px rgba(0,0,0,0.05); }
         .card:nth-child(1){animation-delay:.05s} .card:nth-child(2){animation-delay:.12s} .card:nth-child(3){animation-delay:.19s}
-        .field-input:focus { outline:none; border-color:#6366f1!important; box-shadow:0 0 0 3px rgba(99,102,241,.15); }
-        .btn-save:hover:not(:disabled)  { background:#4f46e5!important; transform:translateY(-1px); }
-        .btn-run:hover:not(:disabled)   { background:#dcfce7!important; transform:translateY(-1px); }
-        .btn-logout:hover  { background:rgba(255,255,255,.08)!important; }
-        .btn-history:hover { background:rgba(99,102,241,.12)!important; color:#6366f1!important; }
-        .nav-link:hover    { opacity:1!important; }
-        .job-card:hover    { border-color:rgba(16,185,129,.4)!important; background:rgba(16,185,129,.04)!important; transform:translateY(-4px); }
-        .score-pill { font-family:'Syne',sans-serif; font-size:13px; font-weight:600; padding:2px 10px; border-radius:99px; }
-        input[type=range] { -webkit-appearance:none; width:100%; height:4px; border-radius:2px;
+        
+        .field-input:focus { outline:none; border-color:#6366f1!important; box-shadow:0 0 0 4px rgba(99,102,241,.1); }
+        .btn-save:hover:not(:disabled)  { background:#4f46e5!important; transform:translateY(-1px); box-shadow: 0 4px 12px rgba(99,102,241,0.3); }
+        .btn-run:hover:not(:disabled)   { background:#dcfce7!important; transform:translateY(-1px); box-shadow: 0 4px 12px rgba(16,185,129,0.15); }
+        .btn-logout:hover  { background:rgba(239,68,68,.05)!important; }
+        .btn-history:hover { background:#f8fafc!important; border-color:#6366f1!important; color:#6366f1!important; }
+        .nav-link:hover    { background: #f8fafc; color: #111827!important; }
+        .job-card:hover    { border-color:#6366f1!important; background:rgba(99,102,241,.02)!important; transform:translateY(-2px); }
+        
+        .score-pill { font-family:'Syne',sans-serif; font-size:12px; font-weight:700; padding:4px 12px; border-radius:99px; }
+        
+        input[type=range] { -webkit-appearance:none; width:100%; height:6px; border-radius:3px;
           background:linear-gradient(to right,#6366f1 0%,#6366f1 calc((var(--val,70) - 0)/(100 - 0)*100%),#e2e8f0 calc((var(--val,70) - 0)/(100 - 0)*100%),#e2e8f0 100%); }
-        input[type=range]::-webkit-slider-thumb { -webkit-appearance:none; width:18px; height:18px; border-radius:50%; background:#6366f1; cursor:pointer; border:2px solid #fff; box-shadow:0 1px 4px rgba(0,0,0,.2); }
+        input[type=range]::-webkit-slider-thumb { -webkit-appearance:none; width:20px; height:20px; border-radius:50%; background:#6366f1; cursor:pointer; border:3px solid #fff; box-shadow:0 2px 6px rgba(0,0,0,0.15); transition: transform 0.1s; }
+        input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.1); }
+
+        /* Responsive Breakpoints */
+        @media (max-width: 1024px) {
+          .dashboard-grid { grid-template-columns: 1fr!important; }
+          .right-col { order: -1; } /* Move quick actions to top on tablet/mobile */
+        }
+
+        @media (max-width: 768px) {
+          .nav-inner { padding: 0 16px!important; }
+          .nav-link-text { display: none; }
+          .nav-link { padding: 8px!important; }
+          .main-content { padding: 24px 16px!important; }
+          .greeting-container { flex-direction: column; align-items: flex-start!important; gap: 16px; }
+          .greet-name { font-size: 28px!important; }
+          .field-row { gap: 12px!important; }
+          .card { padding: 20px!important; }
+        }
       `}</style>
 
       {/* NAV */}
       <nav style={styles.nav}>
-        <div style={styles.navInner}>
+        <div style={styles.navInner} className="nav-inner">
           <span style={styles.logo}>PingScore</span>
           <div style={styles.navLinks}>
             <button style={styles.navLink} className="nav-link" onClick={() => navigate("/history")}>
-              <IconHistory /> History
+              <IconHistory /> <span className="nav-link-text">History</span>
             </button>
             <button style={styles.navLink} className="nav-link" onClick={() => navigate("/profile")}>
               <div style={styles.avatar}>{initials}</div>
-              {user?.displayName?.split(" ")[0] || "Profile"}
+              <span className="nav-link-text">{user?.displayName?.split(" ")[0] || "Profile"}</span>
             </button>
-            <button style={{ ...styles.navLink, color: "#ef4444" }} className="btn-logout" onClick={handleSignOut}>
-              <IconLogout /> Sign out
+            <button style={{ ...styles.navLink, color: "#ef4444" }} className="nav-link btn-logout" onClick={handleSignOut}>
+              <IconLogout /> <span className="nav-link-text">Sign out</span>
             </button>
           </div>
         </div>
       </nav>
 
-      <main style={styles.main}>
+      <main style={styles.main} className="main-content">
         {/* greeting */}
-        <div style={styles.greeting}>
+        <div style={styles.greeting} className="greeting-container">
           <div>
-            <p style={styles.greetSub}>Good to see you,</p>
-            <h1 style={styles.greetName}>{user?.displayName || "Vachan"}</h1>
+            <p style={styles.greetSub}>Welcome back,</p>
+            <h1 style={styles.greetName} className="greet-name">{user?.displayName || "Vachan"}</h1>
           </div>
           {schedulerStatus && (
             <div style={styles.statusBadge}>
-              <span style={{ width:8, height:8, borderRadius:"50%", background:"#10b981", display:"inline-block", animation:"pulse 2s infinite" }} />
-              Scheduler running · next at {to12Hour(prefs.schedule_time)}
+              <span style={{ width:10, height:10, borderRadius:"50%", background:"#10b981", display:"inline-block", animation:"pulse 2s infinite" }} />
+              Scheduler active · {to12Hour(prefs.schedule_time)}
             </div>
           )}
         </div>
 
-        <div style={styles.grid}>
+        <div style={styles.grid} className="dashboard-grid">
           {/* LEFT: preferences */}
           <section style={styles.card} className="card">
             <div style={styles.cardHeader}>
               <h2 style={styles.cardTitle}>Job Preferences</h2>
-              <p style={styles.cardSub}>What jobs should we find for you?</p>
+              <p style={styles.cardSub}>Tailor your automated job search settings.</p>
             </div>
             {loadingPrefs ? (
-              <div style={styles.loadingState}><IconLoader /> Loading...</div>
+              <div style={styles.loadingState}><IconLoader /> Loading preferences...</div>
             ) : (
               <form onSubmit={handleSavePrefs} style={styles.form}>
-                <div style={styles.fieldRow}>
+                <div style={styles.fieldRow} className="field-row">
                   <FieldGroup icon={<IconBriefcase />} label="Job Title" htmlFor="job_title">
                     <input id="job_title" className="field-input" style={styles.input}
-                      placeholder="e.g. Full Stack Developer" value={prefs.job_title}
+                      placeholder="e.g. Software Engineer" value={prefs.job_title}
                       onChange={e => setPrefs({ ...prefs, job_title: e.target.value })} />
                   </FieldGroup>
                   <FieldGroup icon={<IconMap />} label="Location" htmlFor="location">
                     <input id="location" className="field-input" style={styles.input}
-                      placeholder="e.g. Bangalore" value={prefs.location}
+                      placeholder="e.g. Remote, NYC" value={prefs.location}
                       onChange={e => setPrefs({ ...prefs, location: e.target.value })} />
                   </FieldGroup>
                 </div>
 
-                <FieldGroup icon={<IconStar />} label="Experience Level" htmlFor="experience">
-                  <select id="experience" className="field-input" style={{ ...styles.input, cursor:"pointer", appearance:"none" }}
-                    value={prefs.experience} onChange={e => setPrefs({ ...prefs, experience: e.target.value })}>
-                    <option value="">Select experience</option>
-                    <option value="0-1 years">Fresher (0–1 years)</option>
-                    <option value="0-2 years">Junior (0–2 years)</option>
-                    <option value="2-4 years">Mid-level (2–4 years)</option>
-                    <option value="4-7 years">Senior (4–7 years)</option>
-                    <option value="7+ years">Expert (7+ years)</option>
-                  </select>
-                </FieldGroup>
-
-                <FieldGroup icon={<IconBriefcase />} label="Key Skills (comma separated)" htmlFor="skills">
-                  <input id="skills" className="field-input" style={styles.input}
-                    placeholder="e.g. React, Node.js, MongoDB" value={prefs.skills}
-                    onChange={e => setPrefs({ ...prefs, skills: e.target.value })} />
-                </FieldGroup>
-
-                <div style={styles.fieldRow}>
-                  <FieldGroup icon={<IconClock />} label="Daily Alert Time" htmlFor="schedule_time">
+                <div style={styles.fieldRow} className="field-row">
+                  <FieldGroup icon={<IconStar />} label="Experience" htmlFor="experience">
+                    <select id="experience" className="field-input" style={{ ...styles.input, cursor:"pointer", appearance:"none" }}
+                      value={prefs.experience} onChange={e => setPrefs({ ...prefs, experience: e.target.value })}>
+                      <option value="">Any level</option>
+                      <option value="0-1 years">Fresher (0–1 years)</option>
+                      <option value="0-2 years">Junior (0–2 years)</option>
+                      <option value="2-4 years">Mid-level (2–4 years)</option>
+                      <option value="4-7 years">Senior (4–7 years)</option>
+                      <option value="7+ years">Lead/Expert (7+ years)</option>
+                    </select>
+                  </FieldGroup>
+                  <FieldGroup icon={<IconClock />} label="Alert Time" htmlFor="schedule_time">
                     <input id="schedule_time" type="time" className="field-input" style={styles.input}
                       value={prefs.schedule_time}
                       onChange={e => setPrefs({ ...prefs, schedule_time: e.target.value })} />
                   </FieldGroup>
-                  <FieldGroup icon={<IconStar />} label={`Min AI Score: ${prefs.min_score}`} htmlFor="min_score">
-                    <input id="min_score" type="range" min="0" max="100" step="5"
-                      value={prefs.min_score}
-                      onChange={e => { const v = Number(e.target.value); setPrefs({ ...prefs, min_score: v }); e.target.style.setProperty("--val", v); }}
-                      ref={el => { if (el) el.style.setProperty("--val", prefs.min_score); }} />
-                    <div style={{ display:"flex", justifyContent:"space-between", marginTop:4 }}>
-                      <span style={{ color:"#6b7280", fontSize:11 }}>0</span>
-                      <span style={{ color:"#6b7280", fontSize:11 }}>100</span>
-                    </div>
-                  </FieldGroup>
+                </div>
+
+                <FieldGroup icon={<IconBriefcase />} label="Skills (comma separated)" htmlFor="skills">
+                  <input id="skills" className="field-input" style={styles.input}
+                    placeholder="e.g. React, Python, AWS" value={prefs.skills}
+                    onChange={e => setPrefs({ ...prefs, skills: e.target.value })} />
+                </FieldGroup>
+
+                <div style={{ marginBottom: 8 }}>
+                  <label style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:12 }}>
+                    <span style={{ display:"flex", alignItems:"center", gap:8, fontSize:13, fontWeight:600, color:"#374151" }}>
+                      <span style={{ color:"#6366f1" }}><IconStar /></span> Min Match Score
+                    </span>
+                    <span style={{ fontSize:14, fontWeight:700, color:"#6366f1", background:"#eef2ff", padding:"2px 8px", borderRadius:6 }}>{prefs.min_score}%</span>
+                  </label>
+                  <input id="min_score" type="range" min="0" max="100" step="5"
+                    style={{ cursor: 'pointer' }}
+                    value={prefs.min_score}
+                    onChange={e => { const v = Number(e.target.value); setPrefs({ ...prefs, min_score: v }); e.target.style.setProperty("--val", v); }}
+                    ref={el => { if (el) el.style.setProperty("--val", prefs.min_score); }} />
+                  <div style={{ display:"flex", justifyContent:"space-between", marginTop:8 }}>
+                    <span style={{ color:"#94a3b8", fontSize:11, fontWeight:500 }}>Broad Match</span>
+                    <span style={{ color:"#94a3b8", fontSize:11, fontWeight:500 }}>Perfect Fit Only</span>
+                  </div>
                 </div>
 
                 {/* Pipeline toggles */}
                 <div style={styles.togglesCard}>
-                  <p style={{ fontSize:14, fontWeight:600, color:"#111827", marginBottom:2 }}>Pipeline Features</p>
-                  <p style={{ fontSize:12, color:"#9ca3af", marginBottom:14 }}>Choose what happens when jobs are fetched</p>
-                  <div style={{ display:"flex", flexDirection:"column", gap:12 }}>
+                  <p style={{ fontSize:14, fontWeight:700, color:"#111827", marginBottom:4 }}>Automation Pipeline</p>
+                  <p style={{ fontSize:12, color:"#64748b", marginBottom:16 }}>Configure what happens when a match is found</p>
+                  <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
                     {[
-                      { key:"use_ai_filter",    label:"AI Scoring & Filter",  desc:"Score jobs with Groq and filter by min score" },
-                      { key:"use_cover_letter", label:"Cover Letter",          desc:"Generate a tailored cover letter per job" },
-                      { key:"use_resume_match", label:"Resume Match %",        desc:"Calculate how well job matches your resume" },
-                      { key:"send_whatsapp",    label:"Email Delivery",        desc:"Send job results to your email" },
+                      { key:"use_ai_filter",    label:"AI Intelligence",  desc:"Use LLM to score relevance" },
+                      { key:"use_cover_letter", label:"Smart Cover Letter",desc:"Generate tailored letters" },
+                      { key:"use_resume_match", label:"Resume Analysis",  desc:"Compare against your CV" },
+                      { key:"send_whatsapp",    label:"Email Alerts",     desc:"Receive instant notifications" },
                     ].map(({ key, label, desc }) => (
                       <div key={key} style={{ display:"flex", alignItems:"center", gap:12 }}>
                         <div style={{ flex:1 }}>
-                          <p style={{ fontSize:13, fontWeight:500, color:"#374151", marginBottom:1 }}>{label}</p>
-                          <p style={{ fontSize:11, color:"#9ca3af" }}>{desc}</p>
+                          <p style={{ fontSize:13, fontWeight:600, color:"#334155", marginBottom:1 }}>{label}</p>
+                          <p style={{ fontSize:11, color:"#94a3b8" }}>{desc}</p>
                         </div>
                         <button type="button"
                           onClick={() => setPrefs(p => ({ ...p, [key]: !p[key] }))}
-                          style={{ position:"relative", width:44, height:24, borderRadius:99, border:"none",
+                          style={{ position:"relative", width:40, height:22, borderRadius:99, border:"none",
                             cursor:"pointer", flexShrink:0, transition:"background .2s", padding:0,
-                            background: prefs[key] ? "#10b981" : "#e5e7eb" }}>
-                          <span style={{ position:"absolute", top:2, width:20, height:20, borderRadius:"50%",
-                            background:"#fff", boxShadow:"0 1px 3px rgba(0,0,0,.2)", transition:"transform .2s", display:"block",
+                            background: prefs[key] ? "#10b981" : "#e2e8f0" }}>
+                          <span style={{ position:"absolute", top:2, width:18, height:18, borderRadius:"50%",
+                            background:"#fff", boxShadow:"0 1px 2px rgba(0,0,0,0.1)", transition:"transform .2s", display:"block",
                             transform: prefs[key] ? "translateX(20px)" : "translateX(2px)" }} />
                         </button>
                       </div>
@@ -326,36 +364,35 @@ export default function Dashboard() {
 
                 <div style={{ display:"flex", alignItems:"center", gap:16, paddingTop:4 }}>
                   <button type="submit" className="btn-save" disabled={savingPrefs} style={styles.btnSave}>
-                    {savingPrefs ? <><IconLoader /> Saving...</> : savedOk ? <><IconCheck /> Saved!</> : "Save Preferences"}
+                    {savingPrefs ? <><IconLoader /> Saving...</> : savedOk ? <><IconCheck /> Settings Saved</> : "Update Preferences"}
                   </button>
-                  {savedOk && <span style={{ display:"flex", alignItems:"center", gap:4, fontSize:13, color:"#10b981" }}><IconCheck /> Preferences updated</span>}
                 </div>
               </form>
             )}
           </section>
 
           {/* RIGHT col */}
-          <div style={styles.rightCol}>
+          <div style={styles.rightCol} className="right-col">
 
             {/* Run Now */}
-            <section style={{ ...styles.card, textAlign:"center", paddingTop:32, paddingBottom:32 }} className="card">
-              <div style={{ width:52, height:52, borderRadius:18, background:"#ecfdf5", color:"#059669",
-                display:"flex", alignItems:"center", justifyContent:"center", margin:"0 auto 16px" }}>
+            <section style={{ ...styles.card, textAlign:"center", padding:32 }} className="card">
+              <div style={{ width:56, height:56, borderRadius:20, background:"#f0fdf4", color:"#16a34a",
+                display:"flex", alignItems:"center", justifyContent:"center", margin:"0 auto 16px", boxShadow: "inset 0 0 0 1px rgba(22,163,74,0.1)" }}>
                 <IconEmail />
               </div>
-              <h2 style={styles.cardTitle}>Send Jobs Now</h2>
-              <p style={styles.cardSub}>Manually trigger a job search and send results to your email.</p>
+              <h2 style={styles.cardTitle}>Run Search Now</h2>
+              <p style={styles.cardSub}>Trigger an immediate search across all platforms.</p>
               <button className="btn-run" onClick={handleRunNow} disabled={running} style={styles.btnRun}>
-                {running ? <><IconLoader /> Fetching jobs...</> : <><IconPlay /> Run Now</>}
+                {running ? <><IconLoader /> Analyzing Jobs...</> : <><IconPlay /> Fetch & Send Now</>}
               </button>
               {runResult && (
                 <div style={{ ...styles.runResult,
-                  background  : runResult.success ? "rgba(16,185,129,.08)" : "rgba(239,68,68,.08)",
-                  borderColor : runResult.success ? "rgba(16,185,129,.3)"  : "rgba(239,68,68,.3)",
-                  color       : runResult.success ? "#059669"              : "#dc2626" }}>
+                  background  : runResult.success ? "#f0fdf4" : "#fef2f2",
+                  borderColor : runResult.success ? "#dcfce7" : "#fee2e2",
+                  color       : runResult.success ? "#166534" : "#991b1b" }}>
                   {runResult.success ? <IconCheck /> : "✕"}&nbsp;
                   {runResult.message}
-                  {runResult.jobs_sent != null && ` (${runResult.jobs_sent} jobs sent)`}
+                  {runResult.jobs_sent != null && ` (${runResult.jobs_sent} sent)`}
                 </div>
               )}
             </section>
@@ -363,23 +400,23 @@ export default function Dashboard() {
             {/* API Usage */}
             {usage && (
               <section style={styles.card} className="card">
-                <h2 style={{ ...styles.cardTitle, marginBottom:4 }}>API Usage Today</h2>
-                <p style={{ ...styles.cardSub, marginBottom:16 }}>Daily limits protect your free quotas</p>
+                <h2 style={{ ...styles.cardTitle, marginBottom:4, fontSize: 16 }}>Daily Quota Usage</h2>
+                <p style={{ ...styles.cardSub, marginBottom:20 }}>Resource limits for your current tier.</p>
                 {[
-                  { label:"Job searches (JSearch)", key:"jsearch" },
-                  { label:"AI calls (Groq)",         key:"groq"    },
-                  { label:"Emails sent",             key:"email"   },
+                  { label:"JSearch API", key:"jsearch" },
+                  { label:"Groq AI",      key:"groq"    },
+                  { label:"Email Alerts", key:"email"   },
                 ].map(({ label, key }) => {
                   const u = usage[key] || { daily_used:0, daily_limit:1, weekly_used:0, weekly_limit:1 };
                   const { pct, col } = usageBar(u.daily_used, u.daily_limit);
                   return (
-                    <div key={key} style={{ marginBottom:16 }}>
-                      <div style={{ display:"flex", justifyContent:"space-between", fontSize:13, marginBottom:6 }}>
-                        <span style={{ color:"#374151", fontWeight:500 }}>{label}</span>
-                        <span style={{ color:"#6b7280" }}>{u.daily_used}/{u.daily_limit} today · {u.weekly_used}/{u.weekly_limit} week</span>
+                    <div key={key} style={{ marginBottom:18 }}>
+                      <div style={{ display:"flex", justifyContent:"space-between", fontSize:12, marginBottom:8 }}>
+                        <span style={{ color:"#475569", fontWeight:600 }}>{label}</span>
+                        <span style={{ color:"#94a3b8" }}>{u.daily_used} / {u.daily_limit}</span>
                       </div>
-                      <div style={{ height:6, borderRadius:99, background:"#e5e7eb" }}>
-                        <div style={{ height:"100%", borderRadius:99, width:`${pct}%`, background:col, transition:"width .4s ease" }}/>
+                      <div style={{ height:6, borderRadius:99, background:"#f1f5f9", overflow:"hidden" }}>
+                        <div style={{ height:"100%", borderRadius:99, width:`${pct}%`, background:col, transition:"width .6s cubic-bezier(0.4, 0, 0.2, 1)" }}/>
                       </div>
                     </div>
                   );
@@ -389,37 +426,36 @@ export default function Dashboard() {
 
             {/* Recent alerts */}
             <section style={styles.card} className="card">
-              <div style={{ ...styles.cardHeader, marginBottom:12, display:"flex", justifyContent:"space-between", alignItems:"center" }}>
-                <h2 style={styles.cardTitle}>Recent Alerts</h2>
-                <button className="btn-history" style={styles.btnHistory} onClick={() => navigate("/history")}>View all</button>
+              <div style={{ ...styles.cardHeader, marginBottom:16, display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+                <h2 style={{ ...styles.cardTitle, fontSize: 16 }}>Recent Matches</h2>
+                <button className="btn-history" style={styles.btnHistory} onClick={() => navigate("/history")}>View History</button>
               </div>
               {loadingHistory ? (
-                <div style={styles.loadingState}><IconLoader /> Loading...</div>
+                <div style={styles.loadingState}><IconLoader /> Fetching...</div>
               ) : recentJobs.length === 0 ? (
-                <div style={{ textAlign:"center", padding:"24px 0" }}>
-                  <p style={{ color:"#9ca3af", fontSize:14 }}>No jobs sent yet.</p>
-                  <p style={{ color:"#9ca3af", fontSize:13, marginTop:4 }}>Run now or wait for the scheduler.</p>
+                <div style={{ textAlign:"center", padding:"32px 0" }}>
+                  <p style={{ color:"#94a3b8", fontSize:14 }}>No matches found yet.</p>
                 </div>
               ) : (
-                <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
+                <div style={{ display:"flex", flexDirection:"column", gap:12 }}>
                   {recentJobs.map((job, i) => (
                     <div key={i} className="job-card" style={styles.jobCard}>
-                      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:4 }}>
-                        <span style={{ fontWeight:500, fontSize:14, color:"#111827" }}>{job.job_title || "Job"}</span>
+                      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:6 }}>
+                        <span style={{ fontWeight:600, fontSize:14, color:"#1e293b", lineHeight:1.3 }}>{job.job_title || "Job Title"}</span>
                         {job.ai_score > 0 && (
-                          <span className="score-pill" style={{ background:`${scoreColor(job.ai_score)}18`, color:scoreColor(job.ai_score) }}>
-                            {job.ai_score}
+                          <span className="score-pill" style={{ background:`${scoreColor(job.ai_score)}15`, color:scoreColor(job.ai_score) }}>
+                            {job.ai_score}%
                           </span>
                         )}
                       </div>
-                      <div style={{ display:"flex", gap:6, fontSize:12, color:"#6b7280" }}>
-                        <span>{job.company || "Company"}</span>
-                        {job.location && <><span style={{ color:"#d1d5db" }}>·</span><span>{job.location}</span></>}
+                      <div style={{ display:"flex", gap:6, fontSize:12, color:"#64748b", marginBottom:8 }}>
+                        <span style={{ fontWeight: 500 }}>{job.company || "Company"}</span>
+                        {job.location && <><span style={{ color:"#cbd5e1" }}>·</span><span>{job.location}</span></>}
                       </div>
                       {job.apply_link && (
                         <a href={job.apply_link} target="_blank" rel="noreferrer"
-                          style={{ display:"inline-block", marginTop:8, fontSize:12, color:"#6366f1", fontWeight:500, textDecoration:"none" }}>
-                          Apply →
+                          style={{ display:"inline-flex", alignItems:"center", gap:4, fontSize:12, color:"#6366f1", fontWeight:600, textDecoration:"none" }}>
+                          Quick Apply <IconPlay />
                         </a>
                       )}
                     </div>
@@ -436,8 +472,8 @@ export default function Dashboard() {
 
 function FieldGroup({ icon, label, htmlFor, children }) {
   return (
-    <div style={{ display:"flex", flexDirection:"column", gap:6, flex:1 }}>
-      <label htmlFor={htmlFor} style={{ display:"flex", alignItems:"center", gap:6, fontSize:13, fontWeight:500, color:"#374151" }}>
+    <div style={{ display:"flex", flexDirection:"column", gap:8, flex:1, minWidth: 200 }}>
+      <label htmlFor={htmlFor} style={{ display:"flex", alignItems:"center", gap:6, fontSize:13, fontWeight:600, color:"#475569" }}>
         <span style={{ color:"#6366f1", display:"flex", alignItems:"center" }}>{icon}</span>
         {label}
       </label>
@@ -447,32 +483,32 @@ function FieldGroup({ icon, label, htmlFor, children }) {
 }
 
 const styles = {
-  root       : { minHeight:"100vh", background:"linear-gradient(to bottom right, #f8fafc, #ffffff)", fontFamily:"'DM Sans',sans-serif", color:"#111827" },
-  nav        : { background:"#fff", borderBottom:"1px solid #e5e7eb", position:"sticky", top:0, zIndex:10 },
-  navInner   : { maxWidth:1200, margin:"0 auto", padding:"0 24px", height:60, display:"flex", alignItems:"center", justifyContent:"space-between" },
-  logo       : { fontFamily:"'Syne',sans-serif", fontWeight:700, fontSize:22, color:"#111827", letterSpacing:"-1px" },
-  navLinks   : { display:"flex", alignItems:"center", gap:8 },
-  navLink    : { display:"flex", alignItems:"center", gap:6, padding:"6px 12px", borderRadius:12, border:"none", background:"transparent", color:"#6b7280", fontSize:14, fontFamily:"'DM Sans',sans-serif", cursor:"pointer", opacity:0.8, transition:"all .2s" },
-  avatar     : { width:26, height:26, borderRadius:"50%", background:"#6366f1", color:"#fff", display:"flex", alignItems:"center", justifyContent:"center", fontSize:11, fontWeight:600 },
-  main       : { maxWidth:1200, margin:"0 auto", padding:"32px 24px" },
-  greeting   : { display:"flex", alignItems:"flex-end", justifyContent:"space-between", marginBottom:28, flexWrap:"wrap", gap:12 },
-  greetSub   : { fontSize:14, color:"#6b7280", marginBottom:2 },
-  greetName  : { fontFamily:"'Syne',sans-serif", fontSize:32, fontWeight:700, color:"#111827", letterSpacing:"-0.025em" },
-  statusBadge: { display:"flex", alignItems:"center", gap:8, padding:"6px 14px", borderRadius:99, background:"#ecfdf5", color:"#059669", fontSize:13, fontWeight:500, border:"1px solid rgba(16,185,129,.2)" },
-  grid       : { display:"grid", gridTemplateColumns:"1fr 380px", gap:20, alignItems:"start" },
-  card       : { background:"#fff", borderRadius:24, border:"1px solid #e5e7eb", padding:28, boxShadow:"0 4px 12px rgba(0,0,0,.03)" },
-  cardHeader : { marginBottom:24 },
-  cardTitle  : { fontFamily:"'Syne',sans-serif", fontSize:18, fontWeight:700, color:"#111827", marginBottom:4, letterSpacing:"-0.025em" },
-  cardSub    : { fontSize:13, color:"#6b7280" },
-  loadingState: { display:"flex", alignItems:"center", gap:8, color:"#9ca3af", fontSize:14, padding:"20px 0" },
-  form       : { display:"flex", flexDirection:"column", gap:20 },
-  fieldRow   : { display:"flex", gap:16, flexWrap:"wrap" },
-  input      : { width:"100%", padding:"10px 14px", borderRadius:12, border:"1.5px solid #e5e7eb", fontSize:14, color:"#111827", background:"#fafafa", fontFamily:"'DM Sans',sans-serif", transition:"border-color .2s, box-shadow .2s" },
-  togglesCard: { background:"#f8f9fc", border:"1px solid #e5e7eb", borderRadius:16, padding:"16px 20px" },
-  btnSave    : { display:"flex", alignItems:"center", gap:8, padding:"11px 24px", borderRadius:12, border:"none", background:"#6366f1", color:"#fff", fontSize:14, fontWeight:500, fontFamily:"'DM Sans',sans-serif", cursor:"pointer", transition:"all .2s" },
-  rightCol   : { display:"flex", flexDirection:"column", gap:20 },
-  btnRun     : { display:"flex", alignItems:"center", justifyContent:"center", gap:8, width:"100%", padding:"13px", marginTop:20, borderRadius:14, border:"none", background:"#ecfdf5", color:"#059669", fontSize:15, fontWeight:600, fontFamily:"'DM Sans',sans-serif", cursor:"pointer", transition:"all .2s" },
-  runResult  : { display:"flex", alignItems:"center", gap:6, marginTop:14, padding:"10px 14px", borderRadius:12, border:"1px solid", fontSize:13, fontWeight:500, textAlign:"left" },
-  btnHistory : { padding:"4px 12px", borderRadius:10, border:"1.5px solid #e5e7eb", background:"transparent", color:"#6b7280", fontSize:13, fontFamily:"'DM Sans',sans-serif", cursor:"pointer", transition:"all .2s", fontWeight:500 },
-  jobCard    : { padding:"12px 14px", borderRadius:12, border:"1px solid #e5e7eb", transition:"all .2s", cursor:"default" },
+  root       : { minHeight:"100vh", background:"#f8fafc", fontFamily:"'DM Sans',sans-serif", color:"#1e293b", textAlign: "left" },
+  nav        : { background:"#fff", borderBottom:"1px solid #e2e8f0", position:"sticky", top:0, zIndex:10 },
+  navInner   : { maxWidth:1440, margin:"0 auto", padding:"0 32px", height:72, display:"flex", alignItems:"center", justifyContent:"space-between" },
+  logo       : { fontFamily:"'Syne',sans-serif", fontWeight:800, fontSize:24, color:"#111827", letterSpacing:"-1.5px" },
+  navLinks   : { display:"flex", alignItems:"center", gap:12 },
+  navLink    : { display:"flex", alignItems:"center", gap:8, padding:"10px 16px", borderRadius:14, border:"none", background:"transparent", color:"#64748b", fontSize:14, fontWeight:600, fontFamily:"'DM Sans',sans-serif", cursor:"pointer", transition:"all .2s" },
+  avatar     : { width:28, height:28, borderRadius:"50%", background:"#6366f1", color:"#fff", display:"flex", alignItems:"center", justifyContent:"center", fontSize:12, fontWeight:700 },
+  main       : { maxWidth:1440, margin:"0 auto", padding:"48px 32px" },
+  greeting   : { display:"flex", alignItems:"flex-end", justifyContent:"space-between", marginBottom:40, flexWrap:"wrap", gap:16 },
+  greetSub   : { fontSize:15, fontWeight:500, color:"#64748b", marginBottom:4 },
+  greetName  : { fontFamily:"'Syne',sans-serif", fontSize:40, fontWeight:700, color:"#111827", letterSpacing:"-0.03em" },
+  statusBadge: { display:"flex", alignItems:"center", gap:10, padding:"8px 18px", borderRadius:99, background:"#f0fdf4", color:"#166534", fontSize:14, fontWeight:600, border:"1px solid #dcfce7" },
+  grid       : { display:"grid", gridTemplateColumns:"1fr 380px", gap:24, alignItems:"start" },
+  card       : { background:"#fff", borderRadius:24, border:"1px solid #e2e8f0", padding:32, boxShadow:"0 1px 3px rgba(0,0,0,0.02)" },
+  cardHeader : { marginBottom:28 },
+  cardTitle  : { fontFamily:"'Syne',sans-serif", fontSize:20, fontWeight:700, color:"#111827", marginBottom:6, letterSpacing:"-0.02em" },
+  cardSub    : { fontSize:14, color:"#64748b", lineHeight:1.5 },
+  loadingState: { display:"flex", alignItems:"center", gap:10, color:"#94a3b8", fontSize:14, padding:"40px 0", justifyContent:"center" },
+  form       : { display:"flex", flexDirection:"column", gap:24 },
+  fieldRow   : { display:"flex", gap:20, flexWrap:"wrap" },
+  input      : { width:"100%", padding:"12px 16px", borderRadius:14, border:"1.5px solid #e2e8f0", fontSize:14, color:"#1e293b", background:"#fcfdfe", fontFamily:"'DM Sans',sans-serif", transition:"all .2s" },
+  togglesCard: { background:"#f8fafc", border:"1px solid #e2e8f0", borderRadius:20, padding:24 },
+  btnSave    : { display:"flex", alignItems:"center", justifyContent:"center", gap:8, width:"100%", padding:"14px 28px", borderRadius:14, border:"none", background:"#6366f1", color:"#fff", fontSize:15, fontWeight:600, fontFamily:"'DM Sans',sans-serif", cursor:"pointer", transition:"all .2s" },
+  rightCol   : { display:"flex", flexDirection:"column", gap:24 },
+  btnRun     : { display:"flex", alignItems:"center", justifyContent:"center", gap:10, width:"100%", padding:"15px", marginTop:24, borderRadius:16, border:"none", background:"#f0fdf4", color:"#16a34a", fontSize:16, fontWeight:700, fontFamily:"'DM Sans',sans-serif", cursor:"pointer", transition:"all .2s" },
+  runResult  : { display:"flex", alignItems:"center", gap:8, marginTop:18, padding:"12px 18px", borderRadius:14, border:"1px solid", fontSize:14, fontWeight:600 },
+  btnHistory : { padding:"6px 14px", borderRadius:12, border:"1.5px solid #e2e8f0", background:"#fff", color:"#475569", fontSize:13, fontFamily:"'DM Sans',sans-serif", cursor:"pointer", transition:"all .2s", fontWeight:600 },
+  jobCard    : { padding:"16px", borderRadius:16, border:"1px solid #e2e8f0", transition:"all .2s", cursor:"default", background:"#fff" },
 };

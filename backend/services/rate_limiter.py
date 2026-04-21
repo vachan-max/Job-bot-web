@@ -2,7 +2,7 @@ from datetime import datetime, timedelta
 from config import rate_limits_col
 
 LIMITS = {
-    "jsearch": {"daily": 6,   "weekly": 15},
+    "jsearch": {"daily": 3,   "weekly": 15},
     "groq"   : {"daily": 100, "weekly": 300},
     "email"  : {"daily": 20,  "weekly": 100},
 }

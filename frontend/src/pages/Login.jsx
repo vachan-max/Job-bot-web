@@ -196,25 +196,7 @@ export default function Login() {
           alignItems: 'center',
           flexWrap: 'wrap', gap: 20
         }}>
-          <span style={{ fontFamily: "'Syne', sans-serif", fontSize: 18, fontWeight: 700, color: '#111827' }}>PingScore</span>
-          <div style={{ display: 'flex', gap: 24 }}>
-            {['Terms', 'Privacy', 'Contact'].map(l => (
-              <a key={l} href="#" style={{
-                fontSize: 12, fontWeight: 600,
-                color: '#6b7280', textDecoration: 'none',
-                transition: 'color 0.2s'
-              }}
-              onMouseEnter={e => e.currentTarget.style.color = '#111827'}
-              onMouseLeave={e => e.currentTarget.style.color = '#6b7280'}
-              >{l}</a>
-            ))}
-          </div>
-          <span style={{
-            fontSize: 12, color: '#9ca3af',
-            fontWeight: 500
-          }}>
-            © 2024 PingScore. All rights reserved.
-          </span>
+          
         </div>
       </footer>
 
