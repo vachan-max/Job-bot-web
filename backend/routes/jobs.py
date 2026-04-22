@@ -6,6 +6,7 @@ from services.ai_filter import filter_jobs
 from services.cover_letter import generate_cover_letter
 from services.email_sender import send_email
 from services.rate_limiter import check_and_increment, get_usage
+from services.resume_parser import get_resume_text
 from datetime import datetime, timezone, timedelta
 from bson import ObjectId
 import os
@@ -42,6 +43,11 @@ async def run_job_fetch(user_data: dict = Depends(verify_token)):
     use_ai_filter     = prefs.get("use_ai_filter",    True)
     use_cover_letter  = prefs.get("use_cover_letter", True)
     send_email_toggle = prefs.get("send_whatsapp",    True)
+
+    # ── Fetch resume text for this user ──────────────────
+    resume_text = await get_resume_text(user_id)
+    if not resume_text:
+        print("[jobs/run] No resume uploaded — match % will be 0")
 
     print(f"[jobs/run] Fetching jobs for {user.get('name')} → {user_email}")
     print(f"[jobs/run] Toggles → AI:{use_ai_filter} | CoverLetter:{use_cover_letter} | Email:{send_email_toggle}")
@@ -87,7 +93,7 @@ async def run_job_fetch(user_data: dict = Depends(verify_token)):
         if not groq_check["allowed"]:
             return {"message": f"⚠️ {groq_check['reason']}", "jobs_sent": 0}
         print("[jobs/run] Running AI filter...")
-        jobs = filter_jobs(jobs, prefs)
+        jobs = filter_jobs(jobs, prefs, resume_text=resume_text)
         if not jobs:
             return {"message": "No jobs matched your minimum score. Try lowering min_score.", "jobs_sent": 0}
     else:
@@ -99,7 +105,7 @@ async def run_job_fetch(user_data: dict = Depends(verify_token)):
         if not cover_check["allowed"]:
             return {"message": f"⚠️ {cover_check['reason']}", "jobs_sent": 0}
         print("[jobs/run] Generating cover letters...")
-        jobs = [generate_cover_letter(job, prefs, your_name) for job in jobs]
+        jobs = [generate_cover_letter(job, prefs, your_name, resume_text=resume_text) for job in jobs]
     else:
         print("[jobs/run] Cover letter SKIPPED")
 

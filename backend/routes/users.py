@@ -4,7 +4,7 @@ from config import users_col, preferences_col
 from models.user import UserProfile, JobPreferences
 from datetime import datetime
 from bson import ObjectId
-import shutil
+import io
 import os
 
 router = APIRouter()
@@ -87,34 +87,62 @@ async def update_preferences(prefs: JobPreferences, user_data: dict = Depends(ve
 
 
 @router.post("/me/resume")
-async def upload_resume(file: UploadFile = File(...), user_data: dict = Depends(verify_token)):
+async def upload_resume(
+    file: UploadFile = File(...),
+    user_data: dict = Depends(verify_token)
+):
     if file.content_type != "application/pdf":
         raise HTTPException(status_code=400, detail="Only PDF files are accepted.")
 
-    backend_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    pdf_path    = os.path.join(backend_dir, "resume.pdf")
-    txt_path    = os.path.join(backend_dir, "resume.txt")
+    # Read PDF bytes into memory — no disk writing
+    pdf_bytes = await file.read()
 
-    with open(pdf_path, "wb") as f:
-        shutil.copyfileobj(file.file, f)
-
+    # Extract text using pymupdf (fitz)
     try:
-        import pdfplumber
-        with pdfplumber.open(pdf_path) as pdf:
-            text = "\n".join(page.extract_text() or "" for page in pdf.pages)
-        with open(txt_path, "w", encoding="utf-8") as f:
-            f.write(text)
+        import fitz  # pymupdf
+        doc = fitz.open(stream=pdf_bytes, filetype="pdf")
+        text = "\n".join(page.get_text() for page in doc)
+        doc.close()
     except Exception as e:
-        print(f"PDF text extraction failed: {e}")
-        text = ""
+        print(f"[resume] PDF extraction error: {e}")
+        raise HTTPException(status_code=500, detail=f"Could not extract text from PDF: {e}")
 
+    if not text.strip():
+        raise HTTPException(status_code=400, detail="PDF appears to be empty or scanned. Please upload a text-based PDF.")
+
+    # Save resume text to MongoDB under the user document
     firebase_uid = user_data.get("uid")
     await users_col.update_one(
         {"firebase_uid": firebase_uid},
-        {"$set": {"resume_filename": file.filename}}
+        {"$set": {
+            "resume_text"    : text.strip(),
+            "resume_filename": file.filename,
+            "resume_uploaded": datetime.utcnow(),
+        }}
     )
 
-    return {"message": "Resume uploaded successfully", "filename": file.filename, "text_length": len(text)}
+    print(f"[resume] Saved {len(text)} chars for {firebase_uid}")
+    return {
+        "message"    : "Resume uploaded successfully",
+        "filename"   : file.filename,
+        "text_length": len(text.strip()),
+    }
+
+
+@router.get("/me/resume")
+async def get_resume_status(user_data: dict = Depends(verify_token)):
+    firebase_uid = user_data.get("uid")
+    user = await users_col.find_one({"firebase_uid": firebase_uid})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    has_resume = bool(user.get("resume_text"))
+    return {
+        "has_resume"      : has_resume,
+        "filename"        : user.get("resume_filename", ""),
+        "uploaded_at"     : user.get("resume_uploaded", ""),
+        "text_length"     : len(user.get("resume_text", "")),
+    }
 
 
 @router.delete("/me/resume")
@@ -122,11 +150,10 @@ async def delete_resume(user_data: dict = Depends(verify_token)):
     firebase_uid = user_data.get("uid")
     await users_col.update_one(
         {"firebase_uid": firebase_uid},
-        {"$unset": {"resume_filename": ""}}
+        {"$unset": {
+            "resume_text"    : "",
+            "resume_filename": "",
+            "resume_uploaded": "",
+        }}
     )
-    backend_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    for filename in ["resume.pdf", "resume.txt"]:
-        path = os.path.join(backend_dir, filename)
-        if os.path.exists(path):
-            os.remove(path)
     return {"message": "Resume removed successfully"}

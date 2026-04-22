@@ -1,24 +1,10 @@
 import os
 from groq import Groq
 from dotenv import load_dotenv
-from services.resume_parser import load_resume_text
 
 load_dotenv()
 
 client = Groq(api_key=os.getenv("GROQ_API_KEY"))
-
-_resume_text = None
-
-
-def get_resume() -> str:
-    global _resume_text
-    if not _resume_text:
-        _resume_text = load_resume_text() or ""
-        if _resume_text:
-            print(f"[ai_filter] Resume loaded ({len(_resume_text)} chars)")
-        else:
-            print("[ai_filter] WARNING: No resume found — match % will be 0")
-    return _resume_text
 
 
 def _ask_groq(prompt: str, max_tokens: int = 5) -> str:
@@ -38,33 +24,28 @@ def _parse_score(raw: str, default: int = 60) -> int:
     return min(int(digits[:3]), 100)
 
 
-def score_job(job: dict, preferences: dict) -> dict:
+def score_job(job: dict, preferences: dict, resume_text: str = "") -> dict:
     title       = job.get("job_title", "")
     company     = job.get("company", "")
     description = job.get("description", "")[:400]
 
-    # 1. Preference match score
+    # ── 1. Preference match score ─────────────────────────
     pref_prompt = f"""You are a job matching AI. Score this job from 0-100.
-
 Candidate wants : {preferences.get('job_title')} role
 Experience      : {preferences.get('experience')}
 Skills          : {preferences.get('skills')}
-
 Job Title       : {title}
 Company         : {company}
 Description     : {description}
-
 Scoring guide:
 85-100 = excellent match (same role, matching skills, right experience level)
 70-84  = good match (similar role, most skills match)
 50-69  = partial match (related role, some skills overlap)
 0-49   = poor match
-
 Reply with ONLY a number 0-100. Nothing else."""
 
     try:
         raw_pref = _ask_groq(pref_prompt)
-        print(f"[ai_filter] Raw Groq response: '{raw_pref}'")
         ai_score = _parse_score(raw_pref, default=60)
         print(f"[ai_filter] '{title}' at '{company}' -> AI score: {ai_score}")
     except Exception as e:
@@ -73,28 +54,23 @@ Reply with ONLY a number 0-100. Nothing else."""
 
     job["ai_score"] = ai_score
 
-    # 2. Resume match score
-    resume_text = get_resume()
-
+    # ── 2. Resume match score ─────────────────────────────
     if not resume_text:
-        job["match_percent"] = 0
+        print(f"[ai_filter] No resume — skipping match % for '{title}'")
+        job["match_percent"] = job.get("match_percent", 0)
         return job
 
     resume_prompt = f"""You are a resume screening AI.
-
 RESUME (candidate's actual experience and skills):
 {resume_text[:800]}
-
 JOB POSTING:
 Title      : {title}
 Company    : {company}
 Description: {description}
-
 How well does this resume match this job? Consider:
 - Skills overlap (programming languages, frameworks, tools)
 - Experience level match
 - Domain/industry relevance
-
 Reply with ONLY a number 0-100. Nothing else."""
 
     try:
@@ -109,15 +85,14 @@ Reply with ONLY a number 0-100. Nothing else."""
     return job
 
 
-def filter_jobs(jobs: list, preferences: dict) -> list:
+def filter_jobs(jobs: list, preferences: dict, resume_text: str = "") -> list:
     min_score = int(preferences.get("min_score", 70))
-
     print(f"[ai_filter] Scoring {len(jobs)} jobs, min_score={min_score}")
 
-    scored   = [score_job(job, preferences) for job in jobs]
-    passed   = [j for j in scored if j["ai_score"] >= min_score]
-    rejected = [j for j in scored if j["ai_score"] <  min_score]
-    
+    scored   = [score_job(job, preferences, resume_text) for job in jobs]
+    passed   = [j for j in scored if j["ai_score"] >= min_score or j.get("match_percent", 0) >= 50]
+    rejected = [j for j in scored if j["ai_score"] < min_score and j.get("match_percent", 0) < 50]
+
     print(f"[ai_filter] {len(passed)} passed, {len(rejected)} rejected")
     for j in rejected:
         print(f"[ai_filter]   REJECTED: '{j.get('job_title')}' "

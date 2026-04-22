@@ -6,55 +6,63 @@ load_dotenv()
 
 client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
-def generate_cover_letter(job: dict, preferences: dict, your_name: str) -> dict:
-    """
-    Generates cover letter + resume match % for one job.
-    Returns job with cover_letter and match_percent added.
-    """
 
+def generate_cover_letter(job: dict, preferences: dict, your_name: str, resume_text: str = "") -> dict:
     skills     = preferences.get("skills", "")
     experience = preferences.get("experience", "")
     job_title  = job.get("job_title", "")
     company    = job.get("company", "")
     desc       = job.get("description", "")[:600]
 
+    # Use resume text if available, otherwise fall back to skills from prefs
+    resume_section = f"- Resume Summary: {resume_text[:400]}" if resume_text else ""
+
     prompt = f"""
 You are a career coach AI writing on behalf of a job applicant.
 
-STRICT RULE: Only mention skills from the candidate's actual skill list below.
-Do NOT invent, assume, or add any skill that is not explicitly listed.
-Do NOT mention TensorFlow, PyTorch, AWS, Docker, or any tool unless it appears in the skill list.
+STRICT RULES — follow every one:
+- Only mention skills from the candidate's skill list below. Do NOT invent any skill.
+- Do NOT say "I don't have experience", "I lack", "although I", "as a fresh graduate", "I don't have a specific project". These phrases are BANNED.
+- Always write confidently. The candidate HAS projects — pick the most relevant one and mention it by name.
+- Keep the letter to exactly 3 sentences on a single line.
 
 Candidate:
-- Name      : {your_name}
-- Skills    : {skills}
-- Experience: {experience}
+- Name       : {your_name}
+- Skills     : {skills}
+- Experience : {experience}
+- Internship : Web Dev Intern at Internsforge (Jun–Sep 2025)
+- Projects   : ThinkBoard (MERN notes app), Chat App (Firebase + React),
+               Voting App (MERN stack), Drone control (gesture + voice commands)
+- Education  : B.E. CSE — Yenepoya Institute of Technology (2026, CGPA 8.1)
+{resume_section}
 
 Job:
-- Title     : {job_title}
-- Company   : {company}
+- Title      : {job_title}
+- Company    : {company}
 - Description: {desc}
 
 Do TWO things:
 
 1. Calculate resume match % — compare candidate skills vs job requirements honestly.
-   If the job needs 5+ years experience and candidate is a fresher, score below 40.
-   If skills mostly match, score 60-80. Perfect match = 80-95.
+   - Job needs 5+ years and candidate is fresher → score below 40
+   - Skills mostly match → score 60–80
+   - Strong match → score 80–95
 
-2. Write a 3-sentence cover letter using ONLY the candidate's actual skills listed above.
-   Sentence 1: enthusiasm for the role + one relevant skill they actually have.
-   Sentence 2: one specific project or experience from their background.
-   Sentence 3: availability and eagerness to contribute.
+2. Write a confident 3-sentence cover letter:
+   Sentence 1: Excitement for the role + one relevant skill the candidate actually has.
+   Sentence 2: Name ONE project from the projects list that is most relevant to this job.
+   Sentence 3: Mention the Internsforge internship and eagerness to contribute immediately.
+   Never say "I don't have" or "although I lack" — stay positive and confident.
 
-Reply in this EXACT format and nothing else:
-MATCH: <number only, no % sign>
-LETTER: <all 3 sentences on a single line>
+Reply in this EXACT format — nothing else, no extra text:
+MATCH: <number only>
+LETTER: <3 sentences all on one line>
 """
 
     try:
         response = client.chat.completions.create(
-            model    = "llama-3.3-70b-versatile",
-            messages = [{"role": "user", "content": prompt}],
+            model      = "llama-3.3-70b-versatile",
+            messages   = [{"role": "user", "content": prompt}],
             max_tokens = 400
         )
 
@@ -69,15 +77,14 @@ LETTER: <all 3 sentences on a single line>
                 digits        = "".join(filter(str.isdigit, line.replace("MATCH:", "")))
                 match_percent = int(digits) if digits else 0
             elif line.startswith("LETTER:"):
-                cover_letter = line.replace("LETTER:", "").strip()
+                cover_letter  = line.replace("LETTER:", "").strip()
 
-        # Fallback — if LETTER: line was empty, take everything after MATCH line
         if not cover_letter:
             parts = text.split("LETTER:")
             if len(parts) > 1:
                 cover_letter = parts[1].strip().replace("\n", " ")
 
-        # Only overwrite match_percent if AI filter didn't already set it
+        # Only set match_percent if ai_filter didn't already set it
         if not job.get("match_percent"):
             job["match_percent"] = match_percent
         job["cover_letter"] = cover_letter
@@ -86,7 +93,7 @@ LETTER: <all 3 sentences on a single line>
 
     except Exception as e:
         print(f"[cover_letter] Error: {e}")
-        job["match_percent"] = 0
+        job["match_percent"] = job.get("match_percent", 0)
         job["cover_letter"]  = "Could not generate cover letter."
 
     return job

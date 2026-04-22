@@ -5,8 +5,9 @@ from config import users_col, preferences_col, job_alerts_col, job_links_col
 from services.job_fetcher import fetch_jobs
 from services.ai_filter import filter_jobs
 from services.cover_letter import generate_cover_letter
-from services.email_sender import send_email
+from services.email_sender import send_email, send_no_jobs_email
 from services.rate_limiter import check_and_increment
+from services.resume_parser import get_resume_text
 
 IST = timezone(timedelta(hours=5, minutes=30))
 
@@ -37,6 +38,11 @@ async def run_for_user(user: dict, prefs: dict):
         return
 
     try:
+        # ── Fetch resume ──────────────────────────────────
+        resume_text = await get_resume_text(user_id)
+        if not resume_text:
+            print(f"[scheduler] No resume for {name} — match % will be 0")
+
         # ── Step 1: JSearch rate limit + Fetch ───────────
         jsearch_check = await check_and_increment("jsearch", cost=1, user_id=user_id)
         if not jsearch_check["allowed"]:
@@ -48,6 +54,8 @@ async def run_for_user(user: dict, prefs: dict):
         jobs = fetch_jobs(job_title=prefs["job_title"], location=prefs["location"])
         if not jobs:
             print(f"[scheduler] No jobs found for {name}")
+            if send_email_toggle:
+                send_no_jobs_email(user_email, name, reason="No jobs found from search today.")
             return
 
         # ── Step 2: Deduplicate ───────────────────────────
@@ -71,6 +79,8 @@ async def run_for_user(user: dict, prefs: dict):
 
         if not jobs:
             print(f"[scheduler] No new jobs for {name} today")
+            if send_email_toggle:
+                send_no_jobs_email(user_email, name, reason="All matching jobs were already sent to you.")
             return
 
         # ── Step 3: AI filter — only if toggle ON ────────
@@ -79,9 +89,11 @@ async def run_for_user(user: dict, prefs: dict):
             if not groq_check["allowed"]:
                 print(f"[scheduler] {groq_check['reason']} — skipping AI filter for {name}")
                 return
-            jobs = filter_jobs(jobs, prefs)
+            jobs = filter_jobs(jobs, prefs, resume_text=resume_text)
             if not jobs:
                 print(f"[scheduler] No jobs passed min_score for {name}")
+                if send_email_toggle:
+                    send_no_jobs_email(user_email, name, reason="No jobs matched your minimum AI score today. Try lowering your min score.")
                 return
             print(f"[scheduler] AI filter done — {len(jobs)} jobs passed")
         else:
@@ -93,7 +105,7 @@ async def run_for_user(user: dict, prefs: dict):
             if not cover_check["allowed"]:
                 print(f"[scheduler] {cover_check['reason']} — skipping cover letters for {name}")
                 return
-            jobs = [generate_cover_letter(job, prefs, your_name) for job in jobs]
+            jobs = [generate_cover_letter(job, prefs, your_name, resume_text=resume_text) for job in jobs]
             print(f"[scheduler] Cover letters generated")
         else:
             print(f"[scheduler] Cover letter SKIPPED")

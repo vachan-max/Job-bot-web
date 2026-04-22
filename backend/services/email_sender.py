@@ -192,3 +192,47 @@ def send_email(jobs: list, to_email: str, prefs: dict = None):
 
     except Exception as e:
         print(f"[email] Error: {e}")
+
+def send_no_jobs_email(to_email: str, name: str, reason: str = ""):
+    try:
+        msg = MIMEMultipart("alternative")
+        msg["Subject"] = "🔔 PingScore — No New Jobs Today"
+        msg["From"]    = f"PingScore Job Bot <{GMAIL_USER}>"
+        msg["To"]      = to_email
+
+        html = f"""
+        <!DOCTYPE html>
+        <html>
+        <body style="margin:0;padding:0;background:#f3f4f6;font-family:'Segoe UI',Arial,sans-serif;">
+          <div style="max-width:620px;margin:32px auto;padding:0 16px;">
+            <div style="background:linear-gradient(135deg,#6366f1,#8b5cf6);border-radius:20px 20px 0 0;padding:28px 32px;text-align:center;">
+              <h1 style="color:#fff;font-size:22px;font-weight:700;margin:0;">🔔 Job Bot Alert</h1>
+            </div>
+            <div style="background:#fff;padding:32px;border-radius:0 0 20px 20px;border:1px solid #e5e7eb;">
+              <p style="font-size:16px;color:#374151;margin:0 0 12px;">Hi <strong>{name}</strong>,</p>
+              <p style="font-size:14px;color:#6b7280;line-height:1.7;margin:0 0 16px;">
+                Your scheduled job search ran today but no new jobs were found to send.
+              </p>
+              <div style="background:#f8f9fc;border-radius:12px;padding:16px;border:1px solid #e5e7eb;margin-bottom:24px;">
+                <p style="font-size:13px;color:#374151;margin:0;">📋 <strong>Reason:</strong> {reason}</p>
+              </div>
+              <p style="font-size:13px;color:#9ca3af;margin:0;">
+                The bot will try again tomorrow at your scheduled time.
+                You can also trigger a manual search from your dashboard.
+              </p>
+            </div>
+          </div>
+        </body>
+        </html>
+        """
+
+        msg.attach(MIMEText(html, "html"))
+
+        with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
+            server.login(GMAIL_USER, GMAIL_PASSWORD)
+            server.sendmail(GMAIL_USER, to_email, msg.as_string())
+
+        print(f"[email] No-jobs notification sent to {to_email}")
+
+    except Exception as e:
+        print(f"[email] No-jobs email error: {e}")
