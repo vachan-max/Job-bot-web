@@ -11,7 +11,7 @@ if not firebase_admin._apps:
     firebase_cred_json = os.getenv("FIREBASE_CREDENTIALS_JSON")
     if firebase_cred_json:
         cred_dict = json.loads(firebase_cred_json)
-        cred = credentials.Certificate(cred_dict)
+        cred = credentials.Certificate(json.loads(firebase_cred_json))
     else:
         cred = credentials.Certificate("serviceAccountKey.json")
     firebase_admin.initialize_app(cred)
