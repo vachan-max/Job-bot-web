@@ -7,14 +7,15 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-if not firebase_admin._apps:
-    firebase_cred_json = os.getenv("FIREBASE_CREDENTIALS_JSON")
-    if firebase_cred_json:
-        cred = credentials.Certificate(json.loads(firebase_cred_json))
-    else:
-        cred = credentials.Certificate("serviceAccountKey.json")
-    firebase_admin.initialize_app(cred)
+firebase_cred_json = os.getenv("FIREBASE_CREDENTIALS_JSON")
+if not firebase_cred_json:
+    raise ValueError("FIREBASE_CREDENTIALS_JSON environment variable is not set")
 
+cred_dict = json.loads(firebase_cred_json)
+cred = credentials.Certificate(cred_dict)
+
+if not firebase_admin._apps:
+    firebase_admin.initialize_app(cred)
 
 async def verify_token(authorization: str = Header(...)) -> dict:
     if not authorization.startswith("Bearer "):
