@@ -14,7 +14,9 @@ RAPIDAPI_KEYS = [
 RAPIDAPI_KEYS = [key for key in RAPIDAPI_KEYS if key]
 
 
-def fetch_jobs(job_title: str, location: str, num_results: int = 10, page: int = None) -> list:
+
+
+def fetch_jobs(job_title: str, location: str, experience: str = "", num_results: int = 10, page: int = None) -> list:
     url = "https://jsearch.p.rapidapi.com/search"
 
     selected_page = page if page is not None else random.randint(1, 3)
@@ -31,16 +33,25 @@ def fetch_jobs(job_title: str, location: str, num_results: int = 10, page: int =
 
         print(f"[job_fetcher] Using key: {api_key[:5]}****")
 
+        experience_map = {
+            "Fresher (0–1 years)": "entry level fresher 0-1 years",
+            "Junior (0–2 years)": "junior entry level 0-2 years",
+            "Mid-level (2–4 years)": "mid level 2-4 years experience",
+            "Senior (4–7 years)": "senior level 4-7 years experience",
+            "Lead/Expert (7+ years)": "lead expert principal 7+ years experience",
+        }
+        exp_term = experience_map.get(experience, "")
+
         # 📅 Date filters (same as your logic)
         for date_filter in ["3days", "week", "month"]:
 
+           
             querystring = {
-                "query": f"{job_title} in {location}",
+                "query": f"{job_title} {exp_term} in {location}",
                 "page": str(selected_page),
                 "num_pages": "1",
                 "date_posted": date_filter
             }
-
             try:
                 response = requests.get(url, headers=headers, params=querystring)
 

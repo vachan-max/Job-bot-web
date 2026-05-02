@@ -51,7 +51,7 @@ async def run_for_user(user: dict, prefs: dict):
 
         print(f"[scheduler] JSearch {jsearch_check['daily_used']}/3 today for {name}")
 
-        jobs = fetch_jobs(job_title=prefs["job_title"], location=prefs["location"])
+        jobs = fetch_jobs(job_title=prefs["job_title"], location=prefs["location"],experience=prefs.get("experience", ""))
         if not jobs:
             print(f"[scheduler] No jobs found for {name}")
             if send_email_toggle:

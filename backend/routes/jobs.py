@@ -59,7 +59,7 @@ async def run_job_fetch(user_data: dict = Depends(verify_token)):
 
     print(f"[jobs/run] JSearch {jsearch_check['daily_used']}/3 today")
 
-    jobs = fetch_jobs(job_title=prefs["job_title"], location=prefs["location"])
+    jobs = fetch_jobs(job_title=prefs["job_title"], location=prefs["location"],experience=prefs.get("experience", ""))
     if not jobs:
         return {"message": "No jobs found right now. Try again later.", "jobs_sent": 0}
 
