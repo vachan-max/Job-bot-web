@@ -24,6 +24,7 @@ ALLOWED_ORIGINS = [
     "http://127.0.0.1:5173",
     "http://127.0.0.1:3000",
     "https://job-bot-web.vercel.app",
+    "https://job-bot-web-ekwq.onrender.com"
 ]
 
 app.add_middleware(

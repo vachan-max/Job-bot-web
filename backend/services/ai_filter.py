@@ -100,4 +100,4 @@ def filter_jobs(jobs: list, preferences: dict, resume_text: str = "") -> list:
               f"(min={min_score})")
 
     passed.sort(key=lambda x: x["ai_score"], reverse=True)
-    return passed[:10]
+    return passed[:5]

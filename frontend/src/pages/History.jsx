@@ -415,12 +415,19 @@ export default function History() {
                               transform="rotate(-90 19 19)"
                             />
                           </svg>
-                          <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", top: -8 }}>
-                            <span style={{ fontSize: 11, fontWeight: 700, color: matchColor(job.match_percent) }}>
-                              {job.match_percent}%
-                            </span>
-                          </div>
-                          <span style={styles.matchLabel}>Fit</span>
+                    <div style={{ 
+                      display: "inline-flex", 
+                      alignItems: "center", 
+                      padding: "4px 12px", 
+                      borderRadius: "999px", 
+                      backgroundColor: "rgba(0,0,0,0.05)", /* Soft neutral background */
+                      fontWeight: 600,
+                      fontSize: "12px",
+                      color: matchColor(job.match_percent) 
+                    }}>
+                       Resume Score: {job.match_percent}%
+                    </div>
+                          
                         </div>
                       )}
 

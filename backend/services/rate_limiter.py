@@ -2,9 +2,9 @@ from datetime import datetime, timedelta
 from config import rate_limits_col
 
 LIMITS = {
-    "jsearch": {"daily": 50,   "weekly": 120},
-    "groq"   : {"daily": 100, "weekly": 300},
-    "email"  : {"daily": 20,  "weekly": 100},
+    "jsearch": {"daily": 30,   "weekly": 100},
+    "groq"   : {"daily": 40, "weekly": 100},
+    "email"  : {"daily": 50,  "weekly": 100},
 }
 
 async def check_and_increment(service: str, cost: int = 1, user_id: str = "global") -> dict:

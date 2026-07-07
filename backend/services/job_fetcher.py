@@ -23,6 +23,15 @@ def fetch_jobs(job_title: str, location: str, experience: str = "", num_results:
 
     print(f"[job_fetcher] Fetching page {selected_page} for '{job_title}' in '{location}'")
 
+    experience_map = {
+            "Any level": "",
+            "0-1 years": "entry level fresher 0-1 years",
+            "0-2 years": "junior entry level 0-2 years",
+            "2-4 years": "mid level 2-4 years experience",
+            "4-7 years": "senior level 4-7 years experience",
+            "7+ years": "lead expert principal 7+ years experience",
+       }
+
     # 🔁 Loop through API keys
     for api_key in RAPIDAPI_KEYS:
 
@@ -33,14 +42,9 @@ def fetch_jobs(job_title: str, location: str, experience: str = "", num_results:
 
         print(f"[job_fetcher] Using key: {api_key[:5]}****")
 
-        experience_map = {
-            "Fresher (0–1 years)": "entry level fresher 0-1 years",
-            "Junior (0–2 years)": "junior entry level 0-2 years",
-            "Mid-level (2–4 years)": "mid level 2-4 years experience",
-            "Senior (4–7 years)": "senior level 4-7 years experience",
-            "Lead/Expert (7+ years)": "lead expert principal 7+ years experience",
-        }
-        exp_term = experience_map.get(experience, "")
+      
+        exp_term = experience_map.get(experience or "Any level", "")
+        print(exp_term)
 
         # 📅 Date filters (same as your logic)
         for date_filter in ["3days", "week", "month"]:
