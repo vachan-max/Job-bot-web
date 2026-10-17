@@ -155,7 +155,7 @@ def _build_html(jobs: list, prefs: dict) -> str:
 
 def send_email(jobs: list, to_email: str, prefs: dict = None):
     if not jobs:
-        return
+        return False
 
     if prefs is None:
         prefs = {}
@@ -172,11 +172,13 @@ def send_email(jobs: list, to_email: str, prefs: dict = None):
 
         response = resend.Emails.send(params)
         print(f"[email] Sent {len(jobs)} jobs to {to_email} | id: {response['id']}")
+        return True
 
     except Exception as e:
         print(f"[email] Error: {e}")
         print(f"[email] FROM: {FROM_EMAIL}")
         print(f"[email] FROM field: PingScore Job Bot <{FROM_EMAIL}>")
+        return False
 
 
 def send_no_jobs_email(to_email: str, name: str, reason: str = ""):

@@ -1,20 +1,15 @@
 import os
-from groq import Groq
 from dotenv import load_dotenv
+from services.groq_chat import create_groq_chat
 
 load_dotenv()
 
-client = Groq(api_key=os.getenv("GROQ_API_KEY"))
-
-
 def _ask_groq(prompt: str, max_tokens: int = 5) -> str:
-    response = client.chat.completions.create(
-        model       = "llama-3.3-70b-versatile",
-        messages    = [{"role": "user", "content": prompt}],
-        max_tokens  = max_tokens,
-        temperature = 0,
-    )
-    return response.choices[0].message.content.strip()
+    response = create_groq_chat(max_tokens=max_tokens, temperature=0).invoke(prompt)
+    content = response.content
+    if isinstance(content, list):
+        content = "".join(part.get("text", "") if isinstance(part, dict) else str(part) for part in content)
+    return str(content).strip()
 
 
 def _parse_score(raw: str, default: int = 60) -> int:

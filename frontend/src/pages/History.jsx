@@ -174,7 +174,6 @@ export default function History() {
   return (
     <div style={styles.root}>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=Syne:wght@600;700&display=swap');
         
         * { box-sizing: border-box; margin: 0; padding: 0; }
         
@@ -191,22 +190,22 @@ export default function History() {
         .card:hover { transform: translateY(-2px); box-shadow: 0 10px 25px -5px rgba(0,0,0,0.05); }
 
         .job-row { animation: fadeUp .3s ease both; transition: all .2s; }
-        .job-row:hover { border-color: #6366f1!important; background: rgba(99,102,241, 0.01)!important; transform: translateY(-2px); }
+        .job-row:hover { border-color: #e6dfd8!important; background: #faf9f5!important; transform: none; }
         
-        .btn-back:hover { color:#6366f1!important; background: #f8fafc!important; }
-        .apply-btn:hover { background: #4f46e5 !important; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(99,102,241,0.3); }
+        .btn-back:hover { color:#cc785c!important; background: #f5f0e8!important; }
+        .apply-btn:hover { background: #a9583e !important; transform: none; box-shadow: none; }
         .delete-btn:hover { background: #fef2f2 !important; border-color: #ef4444 !important; color: #dc2626!important; }
         .clear-btn:hover:not(:disabled) { background: #fef2f2 !important; border-color: #ef4444!important; }
         
         .filter-btn { cursor:pointer; transition: all .15s; }
-        .filter-btn:hover { border-color: #6366f1 !important; color: #6366f1 !important; background: #f8fafc!important; }
-        .filter-btn.active { background: #6366f1 !important; color: #fff !important; border-color: #6366f1 !important; }
+        .filter-btn:hover { border-color: #cc785c !important; color: #cc785c !important; background: #f5f0e8!important; }
+        .filter-btn.active { background: #e8e0d2 !important; color: #141413 !important; border-color: #e8e0d2 !important; }
         
-        .expand-btn:hover { color: #6366f1 !important; text-decoration: underline; }
-        .search-wrap:focus-within input { border-color: #6366f1 !important; box-shadow: 0 0 0 4px rgba(99,102,241,.1); }
-        .sort-select:focus { outline:none; border-color:#6366f1; box-shadow: 0 0 0 4px rgba(99,102,241,.1); }
+        .expand-btn:hover { color: #cc785c !important; text-decoration: underline; }
+        .search-wrap:focus-within input { border-color: #cc785c !important; box-shadow: 0 0 0 3px rgba(204,120,92,.15); }
+        .sort-select:focus { outline:none; border-color:#cc785c; box-shadow: 0 0 0 3px rgba(204,120,92,.15); }
         
-        .cl-box { background: #f8fafc; border-radius: 16px; border: 1px solid #e2e8f0;
+        .cl-box { background: #f5f0e8; border-radius: 8px; border: 1px solid #e6dfd8;
           padding: 20px; margin-top: 16px; font-size: 14px; color: #334155;
           line-height: 1.7; white-space: pre-wrap; font-family: 'DM Sans', sans-serif;
           max-height: 300px; overflow-y: auto; }

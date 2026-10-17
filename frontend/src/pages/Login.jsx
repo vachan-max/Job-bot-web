@@ -37,10 +37,10 @@ export default function Login() {
   return (
     <div style={{
       minHeight: '100vh',
-      background: 'linear-gradient(to bottom right, #f8fafc, #ffffff)',
+      background: '#faf9f5',
       display: 'flex',
       flexDirection: 'column',
-      fontFamily: "'DM Sans', sans-serif"
+      fontFamily: 'Inter, sans-serif'
     }}>
 
       {/* Center content */}
@@ -56,40 +56,40 @@ export default function Login() {
         <div style={{
           width: '100%',
           maxWidth: 400,
-          background: '#ffffff',
-          borderRadius: 24,
+          background: '#efe9de',
+          borderRadius: 12,
           padding: '48px 40px',
-          border: '1px solid #e5e7eb',
+          border: '1px solid #e6dfd8',
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
-          boxShadow: '0 10px 25px rgba(0,0,0,0.05)'
+          boxShadow: 'none'
         }}>
 
           {/* Logo */}
           <div style={{ marginBottom: 32, textAlign: 'center' }}>
             <div style={{
               width: 56, height: 56,
-              background: '#ecfdf5',
-              borderRadius: 16,
+              background: '#e8e0d2',
+              borderRadius: 12,
               display: 'flex', alignItems: 'center',
               justifyContent: 'center',
               margin: '0 auto 16px',
-              color: '#059669'
+              color: '#cc785c'
             }}>
               <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
               </svg>
             </div>
             <h1 style={{
-              fontFamily: "'Syne', sans-serif",
-              fontSize: 28, fontWeight: 700,
-              color: '#111827', marginBottom: 6, letterSpacing: '-0.025em'
+              fontFamily: 'Cormorant Garamond, Garamond, serif',
+              fontSize: 38, fontWeight: 500,
+              color: '#141413', marginBottom: 6, letterSpacing: '-0.04em'
             }}>
               PingScore
             </h1>
-            <p style={{ fontSize: 14, color: '#6b7280' }}>
-              Premium AI job alerts on WhatsApp
+            <p style={{ fontSize: 14, color: '#6c6a64' }}>
+              A thoughtful search for your next opportunity
             </p>
           </div>
 
@@ -102,13 +102,13 @@ export default function Login() {
             {features.map((f, i) => (
               <li key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
                 <svg width="20" height="20" viewBox="0 0 24 24"
-                  fill="#10b981" style={{ marginTop: 1, flexShrink: 0 }}>
+                  fill="#5db872" style={{ marginTop: 1, flexShrink: 0 }}>
                   <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10
                     10-4.48 10-10S17.52 2 12 2zm-2
                     14.5l-4-4 1.41-1.41L10 13.67l6.59-6.59L18
                     8.5l-8 8z"/>
                 </svg>
-                <span style={{ fontSize: 14, color: '#4b5563', lineHeight: 1.5 }}>
+                <span style={{ fontSize: 14, color: '#3d3d3a', lineHeight: 1.5 }}>
                   {f}
                 </span>
               </li>
@@ -133,20 +133,20 @@ export default function Login() {
             disabled={loading}
             style={{
               width: '100%', height: 52,
-              background: '#111827',
+              background: '#cc785c',
               border: 'none',
-              borderRadius: 14,
+              borderRadius: 8,
               display: 'flex', alignItems: 'center',
               justifyContent: 'center', gap: 12,
               fontSize: 15, fontWeight: 600,
               color: '#ffffff',
               cursor: loading ? 'not-allowed' : 'pointer',
               opacity: loading ? 0.7 : 1,
-              transition: 'all 0.2s',
+              transition: 'background 0.15s',
               fontFamily: 'inherit'
             }}
-            onMouseEnter={e => { if (!loading) e.currentTarget.style.background = '#1f2937'; e.currentTarget.style.transform = 'translateY(-1px)' }}
-            onMouseLeave={e => { e.currentTarget.style.background = '#111827'; e.currentTarget.style.transform = 'translateY(0)' }}
+            onMouseEnter={e => { if (!loading) e.currentTarget.style.background = '#a9583e' }}
+            onMouseLeave={e => { e.currentTarget.style.background = '#cc785c' }}
           >
             {loading ? (
               <>
@@ -184,9 +184,9 @@ export default function Login() {
 
       {/* Footer */}
       <footer style={{
-        background: '#ffffff',
-        borderTop: '1px solid #e5e7eb',
-        padding: '40px 32px'
+        background: '#faf9f5',
+        borderTop: '1px solid #e6dfd8',
+        padding: '24px 32px'
       }}>
         <div style={{
           maxWidth: 900, margin: '0 auto',
@@ -201,7 +201,6 @@ export default function Login() {
       </footer>
 
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Syne:wght@600;700&display=swap');
         @keyframes spin { to { transform: rotate(360deg); } }
       `}</style>
     </div>

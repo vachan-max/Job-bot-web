@@ -195,14 +195,13 @@ export default function Dashboard() {
 
   const usageBar = (used, limit) => {
     const pct = Math.min((used / limit) * 100, 100);
-    const col  = used >= limit ? "#ef4444" : used >= limit * 0.8 ? "#f59e0b" : "#6366f1";
+    const col  = used >= limit ? "#c64545" : used >= limit * 0.8 ? "#d4a017" : "#cc785c";
     return { pct, col };
   };
 
   return (
     <div style={styles.root}>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=Syne:wght@600;700&display=swap');
         * { box-sizing: border-box; margin: 0; padding: 0; }
         ::-webkit-scrollbar { width: 8px; }
         ::-webkit-scrollbar-track { background: #f1f1f1; }
@@ -214,17 +213,17 @@ export default function Dashboard() {
         .card { animation: fadeUp .35s ease both; transition: transform 0.2s ease, box-shadow 0.2s ease; }
         .card:hover { transform: translateY(-2px); box-shadow: 0 10px 25px -5px rgba(0,0,0,0.05); }
         .card:nth-child(1){animation-delay:.05s} .card:nth-child(2){animation-delay:.12s} .card:nth-child(3){animation-delay:.19s}
-        .field-input:focus { outline:none; border-color:#6366f1!important; box-shadow:0 0 0 4px rgba(99,102,241,.1); }
-        .btn-save:hover:not(:disabled)  { background:#4f46e5!important; transform:translateY(-1px); box-shadow: 0 4px 12px rgba(99,102,241,0.3); }
+        .field-input:focus { outline:none; border-color:#cc785c!important; box-shadow:0 0 0 3px rgba(204,120,92,.15); }
+        .btn-save:hover:not(:disabled)  { background:#a9583e!important; transform:none; box-shadow:none; }
         .btn-run:hover:not(:disabled)   { background:#dcfce7!important; transform:translateY(-1px); box-shadow: 0 4px 12px rgba(16,185,129,0.15); }
         .btn-logout:hover  { background:rgba(239,68,68,.05)!important; }
-        .btn-history:hover { background:#f8fafc!important; border-color:#6366f1!important; color:#6366f1!important; }
-        .nav-link:hover    { background: #f8fafc; color: #111827!important; }
-        .job-card:hover    { border-color:#6366f1!important; background:rgba(99,102,241,.02)!important; transform:translateY(-2px); }
+        .btn-history:hover { background:#f5f0e8!important; border-color:#cc785c!important; color:#cc785c!important; }
+        .nav-link:hover    { background: #f5f0e8; color: #141413!important; }
+        .job-card:hover    { border-color:#e6dfd8!important; background:#faf9f5!important; transform:none; }
         .score-pill { font-family:'Syne',sans-serif; font-size:12px; font-weight:700; padding:4px 12px; border-radius:99px; }
         input[type=range] { -webkit-appearance:none; width:100%; height:6px; border-radius:3px;
-          background:linear-gradient(to right,#6366f1 0%,#6366f1 calc((var(--val,70) - 0)/(100 - 0)*100%),#e2e8f0 calc((var(--val,70) - 0)/(100 - 0)*100%),#e2e8f0 100%); }
-        input[type=range]::-webkit-slider-thumb { -webkit-appearance:none; width:20px; height:20px; border-radius:50%; background:#6366f1; cursor:pointer; border:3px solid #fff; box-shadow:0 2px 6px rgba(0,0,0,0.15); transition: transform 0.1s; }
+          background:linear-gradient(to right,#cc785c 0%,#cc785c calc((var(--val,70) - 0)/(100 - 0)*100%),#e6dfd8 calc((var(--val,70) - 0)/(100 - 0)*100%),#e6dfd8 100%); }
+        input[type=range]::-webkit-slider-thumb { -webkit-appearance:none; width:20px; height:20px; border-radius:50%; background:#cc785c; cursor:pointer; border:3px solid #faf9f5; box-shadow:none; transition: transform 0.1s; }
         input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.1); }
         @media (max-width: 1024px) { .dashboard-grid { grid-template-columns: 1fr!important; } .right-col { order: -1; } }
         @media (max-width: 768px) {
@@ -244,6 +243,7 @@ export default function Dashboard() {
         <div style={styles.navInner} className="nav-inner">
           <span style={styles.logo}>PingScore</span>
           <div style={styles.navLinks}>
+            <button style={styles.navLink} className="nav-link" onClick={() => navigate("/job-finder")}>✦ <span className="nav-link-text">Job Finder</span></button>
             <button style={styles.navLink} className="nav-link" onClick={() => navigate("/history")}>
               <IconHistory /> <span className="nav-link-text">History</span>
             </button>
@@ -324,10 +324,10 @@ export default function Dashboard() {
 
                 <div style={{ marginBottom: 8 }}>
                   <label style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:12 }}>
-                    <span style={{ display:"flex", alignItems:"center", gap:8, fontSize:13, fontWeight:600, color:"#374151" }}>
-                      <span style={{ color:"#6366f1" }}><IconStar /></span> Min Match Score
+                    <span style={{ display:"flex", alignItems:"center", gap:8, fontSize:13, fontWeight:600, color:"#3d3d3a" }}>
+                      <span style={{ color:"#cc785c" }}><IconStar /></span> Min Match Score
                     </span>
-                    <span style={{ fontSize:14, fontWeight:700, color:"#6366f1", background:"#eef2ff", padding:"2px 8px", borderRadius:6 }}>{prefs.min_score}%</span>
+                    <span style={{ fontSize:14, fontWeight:600, color:"#141413", background:"#e8e0d2", padding:"2px 8px", borderRadius:6 }}>{prefs.min_score}%</span>
                   </label>
                   <input id="min_score" type="range" min="0" max="100" step="5"
                     style={{ cursor: "pointer" }}
@@ -468,7 +468,7 @@ export default function Dashboard() {
                       </div>
                       {job.apply_link && (
                         <a href={job.apply_link} target="_blank" rel="noreferrer"
-                          style={{ display:"inline-flex", alignItems:"center", gap:4, fontSize:12, color:"#6366f1", fontWeight:600, textDecoration:"none" }}>
+                          style={{ display:"inline-flex", alignItems:"center", gap:4, fontSize:12, color:"#cc785c", fontWeight:600, textDecoration:"none" }}>
                           Quick Apply <IconPlay />
                         </a>
                       )}
@@ -488,7 +488,7 @@ function FieldGroup({ icon, label, htmlFor, children }) {
   return (
     <div style={{ display:"flex", flexDirection:"column", gap:8, flex:1, minWidth:200 }}>
       <label htmlFor={htmlFor} style={{ display:"flex", alignItems:"center", gap:6, fontSize:13, fontWeight:600, color:"#475569" }}>
-        <span style={{ color:"#6366f1", display:"flex", alignItems:"center" }}>{icon}</span>
+        <span style={{ color:"#cc785c", display:"flex", alignItems:"center" }}>{icon}</span>
         {label}
       </label>
       {children}

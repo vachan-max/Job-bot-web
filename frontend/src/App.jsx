@@ -6,6 +6,7 @@ import Login     from './pages/Login'
 import Dashboard from './pages/Dashboard'
 import Profile   from './pages/Profile'
 import History   from './pages/History'
+import JobFinder from './pages/JobFinder'
 
 function PrivateRoute({ children }) {
   const [user,    setUser]    = useState(undefined)
@@ -66,6 +67,7 @@ export default function App() {
         <Route path="/dashboard" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
         <Route path="/profile"   element={<PrivateRoute><Profile /></PrivateRoute>} />
         <Route path="/history"   element={<PrivateRoute><History /></PrivateRoute>} />
+        <Route path="/job-finder" element={<PrivateRoute><JobFinder /></PrivateRoute>} />
         <Route path="*"          element={<Navigate to="/dashboard" />} />
       </Routes>
     </BrowserRouter>

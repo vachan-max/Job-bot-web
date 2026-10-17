@@ -5,6 +5,8 @@ LIMITS = {
     "jsearch": {"daily": 30,   "weekly": 100},
     "groq"   : {"daily": 40, "weekly": 100},
     "email"  : {"daily": 50,  "weekly": 100},
+    "serpapi": {"daily": 10, "weekly": 50},
+    "firecrawl": {"daily": 5, "weekly": 25},
 }
 
 async def check_and_increment(service: str, cost: int = 1, user_id: str = "global") -> dict:

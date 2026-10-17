@@ -1,11 +1,8 @@
 import os
-from groq import Groq
 from dotenv import load_dotenv
+from services.groq_chat import create_groq_chat
 
 load_dotenv()
-
-client = Groq(api_key=os.getenv("GROQ_API_KEY"))
-
 
 def generate_cover_letter(job: dict, preferences: dict, your_name: str, resume_text: str = "") -> dict:
     skills     = preferences.get("skills", "")
@@ -60,13 +57,8 @@ LETTER: <3 sentences all on one line>
 """
 
     try:
-        response = client.chat.completions.create(
-            model      = "llama-3.3-70b-versatile",
-            messages   = [{"role": "user", "content": prompt}],
-            max_tokens = 400
-        )
-
-        text = response.choices[0].message.content.strip()
+        response = create_groq_chat(max_tokens=400).invoke(prompt)
+        text = str(response.content).strip()
 
         match_percent = 0
         cover_letter  = ""
