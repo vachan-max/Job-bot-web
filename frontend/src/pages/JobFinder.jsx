@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { signOut } from 'firebase/auth'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { auth } from '../firebase'
 import ChatWindow from '../components/job-finder/ChatWindow'
 import ResumeUpload from '../components/job-finder/ResumeUpload'
@@ -11,6 +11,7 @@ import './job-finder.css'
 
 export default function JobFinder() {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const [messages, setMessages] = useState([])
   const [searchId, setSearchId] = useState(null)
   const [filters, setFilters] = useState(null)
@@ -23,6 +24,18 @@ export default function JobFinder() {
   const [sendEmail, setSendEmail] = useState(false)
 
   useEffect(() => { refreshSearches() }, [])
+
+  useEffect(() => {
+    const requestedSearchId = searchParams.get('search_id')
+    if (!requestedSearchId) return
+    let active = true
+    getSearches().then(searchList => {
+      if (active) setSearches(searchList)
+      const requestedSearch = searchList.find(search => search._id === requestedSearchId)
+      if (requestedSearch && active) openSearch(requestedSearch)
+    }).catch(err => console.error('Could not open saved finder run', err))
+    return () => { active = false }
+  }, [searchParams])
 
   async function refreshSearches() {
     try { setSearches(await getSearches()) } catch (err) { console.error('Could not load finder history', err) }

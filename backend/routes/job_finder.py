@@ -1,5 +1,5 @@
 import os
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 from bson import ObjectId
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -130,8 +130,6 @@ async def run_search(search_id: str, payload: RunSearchRequest, user_data: dict 
     search = await job_searches_col.find_one({"_id": ObjectId(search_id), "user_id": user_id})
     if not search:
         raise HTTPException(status_code=404, detail="Search not found")
-    if search.get("status") == "running":
-        raise HTTPException(status_code=409, detail="This search is already running")
     filters = payload.filters
     if not filters.job_titles:
         raise HTTPException(status_code=422, detail="Add at least one job title before searching")
@@ -141,9 +139,18 @@ async def run_search(search_id: str, payload: RunSearchRequest, user_data: dict 
         raise HTTPException(status_code=400, detail="Your account does not have an email address")
 
     now = datetime.now(timezone.utc)
+    stale_before = now - timedelta(minutes=10)
     claimed = await job_searches_col.update_one(
-        {"_id": search["_id"], "user_id": user_id, "status": {"$ne": "running"}},
-        {"$set": {"filters": filters.model_dump(), "status": "running", "updated_at": now}},
+        {
+            "_id": search["_id"],
+            "user_id": user_id,
+            "$or": [
+                {"status": {"$ne": "running"}},
+                {"run_started_at": {"$lte": stale_before}},
+                {"run_started_at": {"$exists": False}, "updated_at": {"$lte": stale_before}},
+            ],
+        },
+        {"$set": {"filters": filters.model_dump(), "status": "running", "run_started_at": now, "updated_at": now}},
     )
     if not claimed.modified_count:
         raise HTTPException(status_code=409, detail="This search is already running")
@@ -244,7 +251,7 @@ async def run_search(search_id: str, payload: RunSearchRequest, user_data: dict 
                 "email_error": email_error,
                 "completed_at": datetime.now(timezone.utc),
                 "updated_at": datetime.now(timezone.utc),
-            }},
+            }, "$unset": {"run_started_at": ""}},
         )
         return {
             "search_id": search_id,
@@ -259,13 +266,13 @@ async def run_search(search_id: str, payload: RunSearchRequest, user_data: dict 
     except HTTPException:
         await job_searches_col.update_one(
             {"_id": search["_id"], "user_id": user_id},
-            {"$set": {"status": "failed", "provider_usage": usage, "updated_at": datetime.now(timezone.utc)}},
+            {"$set": {"status": "failed", "provider_usage": usage, "updated_at": datetime.now(timezone.utc)}, "$unset": {"run_started_at": ""}},
         )
         raise
     except Exception as exc:
         await job_searches_col.update_one(
             {"_id": search["_id"], "user_id": user_id},
-            {"$set": {"status": "failed", "error": str(exc)[:500], "provider_usage": usage, "updated_at": datetime.now(timezone.utc)}},
+            {"$set": {"status": "failed", "error": str(exc)[:500], "provider_usage": usage, "updated_at": datetime.now(timezone.utc)}, "$unset": {"run_started_at": ""}},
         )
         raise HTTPException(status_code=502, detail=f"Job search failed: {exc}") from exc
 

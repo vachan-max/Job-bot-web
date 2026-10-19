@@ -8,6 +8,19 @@ import Profile   from './pages/Profile'
 import History   from './pages/History'
 import JobFinder from './pages/JobFinder'
 
+function ThemeToggle() {
+  const [theme, setTheme] = useState(() => localStorage.getItem('pingscore-theme') || 'light')
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme
+    localStorage.setItem('pingscore-theme', theme)
+  }, [theme])
+
+  return (
+    <></>
+  )
+}
+
 function PrivateRoute({ children }) {
   const [user,    setUser]    = useState(undefined)
   const [loading, setLoading] = useState(true)
@@ -61,6 +74,7 @@ function PublicRoute({ children }) {
 export default function App() {
   return (
     <BrowserRouter>
+      <ThemeToggle />
       <Routes>
         <Route path="/"          element={<Navigate to="/dashboard" />} />
         <Route path="/login"     element={<PublicRoute><Login /></PublicRoute>} />

@@ -89,6 +89,7 @@ export default function History() {
   const navigate = useNavigate();
 
   const [jobs,        setJobs]        = useState([]);
+  const [finderRuns,  setFinderRuns]  = useState([]);
   const [loading,     setLoading]     = useState(true);
   const [search,      setSearch]      = useState("");
   const [filterScore, setFilterScore] = useState("all");
@@ -97,7 +98,21 @@ export default function History() {
   const [deletingId,  setDeletingId]  = useState(null);
   const [clearingAll, setClearingAll] = useState(false);
 
-  useEffect(() => { fetchHistory(); }, []);
+  useEffect(() => { fetchHistory(); fetchFinderRuns(); }, []);
+
+  async function fetchFinderRuns() {
+    try {
+      const res = await api.get("/jobs/finder/searches");
+      setFinderRuns(res.data?.searches || []);
+    } catch (e) {
+      console.error("Finder history fetch error:", e);
+      setFinderRuns([]);
+    }
+  }
+
+  function openFinderRun(run) {
+    navigate(`/job-finder?search_id=${encodeURIComponent(run._id)}`);
+  }
 
   async function fetchHistory() {
     try {
@@ -240,6 +255,29 @@ export default function History() {
       </nav>
 
       <main style={styles.main} className="main-content">
+
+        <section style={styles.finderHistory} aria-labelledby="finder-history-title">
+          <div style={styles.finderHistoryHeading}>
+            <div>
+              <p style={styles.finderEyebrow}>Job Finder</p>
+              <h2 id="finder-history-title" style={styles.finderTitle}>Recent finder runs</h2>
+            </div>
+            <button style={styles.finderAction} onClick={() => navigate("/job-finder")}>New search</button>
+          </div>
+          {finderRuns.length === 0 ? (
+            <p style={styles.finderEmpty}>Your confirmed finder searches will appear here.</p>
+          ) : (
+            <div style={styles.finderRuns}>
+              {finderRuns.map(run => (
+                <button key={run._id} style={styles.finderRun} onClick={() => openFinderRun(run)}>
+                  <strong>{(run.filters?.job_titles || ["Untitled search"]).join(", ")}</strong>
+                  <span>{(run.filters?.locations || []).join(", ") || "Any location"}</span>
+                  <small>{run.result_count || 0} results · {run.status} · {formatDate(run.completed_at || run.updated_at)}</small>
+                </button>
+              ))}
+            </div>
+          )}
+        </section>
 
         {/* ── stats row ── */}
         <div style={styles.statsRow} className="stats-grid">
@@ -506,6 +544,14 @@ export default function History() {
 
 // ─── styles ───────────────────────────────────────────────────────────────────
 const styles = {
+  finderHistory: { background: "#fff", border: "1px solid #ebe6df", borderRadius: 18, padding: 24, marginBottom: 28, boxShadow: "0 4px 16px rgba(15,23,42,.03)" },
+  finderHistoryHeading: { display: "flex", justifyContent: "space-between", alignItems: "center", gap: 16, marginBottom: 16 },
+  finderEyebrow: { color: "#a76750", fontSize: 11, fontWeight: 700, letterSpacing: 1.1, textTransform: "uppercase", marginBottom: 5 },
+  finderTitle: { color: "#141413", fontFamily: "Georgia, serif", fontSize: 24, fontWeight: 400 },
+  finderAction: { border: "1px solid #e6dfd8", background: "#faf9f5", borderRadius: 9, padding: "10px 14px", color: "#765344", fontWeight: 700, cursor: "pointer" },
+  finderEmpty: { padding: 16, borderRadius: 10, background: "#faf9f5", color: "#79756d", fontSize: 13 },
+  finderRuns: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 10 },
+  finderRun: { display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 6, minWidth: 0, border: "1px solid #eeeae4", borderRadius: 10, background: "#fff", padding: 14, textAlign: "left", cursor: "pointer" },
   root: { minHeight: "100vh", background: "#f8fafc", fontFamily: "'DM Sans', sans-serif", color: "#1e293b", textAlign: "left" },
   nav: { background: "#fff", borderBottom: "1px solid #e2e8f0", position: "sticky", top: 0, zIndex: 10 },
   navInner: { maxWidth: 1440, margin: "0 auto", padding: "0 32px", height: 72, display: "flex", alignItems: "center", justifyContent: "space-between" },
