@@ -25,7 +25,7 @@ export default function Login() {
       await api.post('/auth/google', {}, {
         headers: { Authorization: `Bearer ${token}` }
       })
-      navigate('/dashboard')
+      navigate('/job-finder')
     } catch (err) {
       console.error('Login failed:', err)
       setError('Login failed. Please try again.')
@@ -35,9 +35,9 @@ export default function Login() {
   }
 
   return (
-    <div style={{
+    <div className="login-root" style={{
       minHeight: '100vh',
-      background: '#faf9f5',
+      background: 'var(--canvas)',
       display: 'flex',
       flexDirection: 'column',
       fontFamily: 'Inter, sans-serif'
@@ -53,13 +53,13 @@ export default function Login() {
       }}>
 
         {/* Card */}
-        <div style={{
+        <div className="login-card" style={{
           width: '100%',
           maxWidth: 400,
-          background: '#efe9de',
+          background: 'var(--surface-card)',
           borderRadius: 12,
           padding: '48px 40px',
-          border: '1px solid #e6dfd8',
+          border: '1px solid var(--hairline)',
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
@@ -68,9 +68,9 @@ export default function Login() {
 
           {/* Logo */}
           <div style={{ marginBottom: 32, textAlign: 'center' }}>
-            <div style={{
+            <div className="login-icon" style={{
               width: 56, height: 56,
-              background: '#e8e0d2',
+              background: 'var(--surface-strong)',
               borderRadius: 12,
               display: 'flex', alignItems: 'center',
               justifyContent: 'center',
@@ -84,11 +84,11 @@ export default function Login() {
             <h1 style={{
               fontFamily: 'Cormorant Garamond, Garamond, serif',
               fontSize: 38, fontWeight: 500,
-              color: '#141413', marginBottom: 6, letterSpacing: '-0.04em'
+              color: 'var(--ink)', marginBottom: 6, letterSpacing: '-0.04em'
             }}>
               PingScore
             </h1>
-            <p style={{ fontSize: 14, color: '#6c6a64' }}>
+            <p className="login-copy" style={{ fontSize: 14, color: 'var(--muted)' }}>
               A thoughtful search for your next opportunity
             </p>
           </div>
@@ -108,7 +108,7 @@ export default function Login() {
                     14.5l-4-4 1.41-1.41L10 13.67l6.59-6.59L18
                     8.5l-8 8z"/>
                 </svg>
-                <span style={{ fontSize: 14, color: '#3d3d3a', lineHeight: 1.5 }}>
+                <span className="login-copy" style={{ fontSize: 14, color: 'var(--body)', lineHeight: 1.5 }}>
                   {f}
                 </span>
               </li>
@@ -183,9 +183,9 @@ export default function Login() {
       </main>
 
       {/* Footer */}
-      <footer style={{
-        background: '#faf9f5',
-        borderTop: '1px solid #e6dfd8',
+      <footer className="login-footer" style={{
+        background: 'var(--canvas)',
+        borderTop: '1px solid var(--hairline)',
         padding: '24px 32px'
       }}>
         <div style={{

@@ -39,6 +39,13 @@ class RunSearchRequest(BaseModel):
     send_email: bool = False
 
 
+class SearchScheduleRequest(BaseModel):
+    schedule_enabled: bool = True
+    schedule_time: str = Field(default="09:00", pattern=r"^([01]\d|2[0-3]):[0-5]\d$")
+    timezone: str = Field(default="UTC", min_length=1, max_length=80)
+    email_enabled: bool = True
+
+
 class JobSearchResult(BaseModel):
     job_title: str
     company: str = ""

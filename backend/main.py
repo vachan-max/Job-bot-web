@@ -5,8 +5,8 @@ from config import db
 from routes.auth  import router as auth_router
 from routes.users import router as users_router
 from routes.jobs  import router as jobs_router
-from routes.job_finder import router as job_finder_router, ensure_job_finder_indexes
-from scheduler import start_scheduler
+from routes.job_finder import router as job_finder_router, saved_search_router, ensure_job_finder_indexes
+from scheduler import start_scheduler, clear_stale_search_locks
 
 
 @asynccontextmanager
@@ -16,6 +16,10 @@ async def lifespan(app: FastAPI):
         await ensure_job_finder_indexes()
     except Exception as exc:
         print(f"[main] Could not create job finder indexes: {exc}")
+    try:
+        await clear_stale_search_locks()
+    except Exception as exc:
+        print(f"[main] Could not clear expired saved-search locks: {exc}")
     start_scheduler()
     yield
     print("[main] Shutting down...")
@@ -50,6 +54,7 @@ app.include_router(auth_router,  prefix="/auth",  tags=["Auth"])
 app.include_router(users_router, prefix="/users", tags=["Users"])
 app.include_router(jobs_router,  prefix="/jobs",  tags=["Jobs"])
 app.include_router(job_finder_router, prefix="/jobs/finder", tags=["Job Finder"])
+app.include_router(saved_search_router, prefix="/saved-searches", tags=["Saved Searches"])
 
 
 @app.get("/health")

@@ -25,6 +25,11 @@ export default function JobFinder() {
 
   useEffect(() => { refreshSearches() }, [])
 
+  function formatSearchList(values, fallback = '') {
+    if (Array.isArray(values)) return values.filter(value => typeof value === 'string' && value.trim()).join(', ') || fallback
+    return typeof values === 'string' && values.trim() ? values : fallback
+  }
+
   useEffect(() => {
     const requestedSearchId = searchParams.get('search_id')
     if (!requestedSearchId) return
@@ -86,27 +91,33 @@ export default function JobFinder() {
     setFilters(search.filters)
     setMessages([])
     setSearchInfo({ provider: search.provider, message: `${search.result_count || 0} saved results · ${search.status}` })
-    try { setJobs(await getSearchResults(search._id)) } catch (err) { setError(err.response?.data?.detail || 'Could not load saved results.') }
+    try {
+      const savedJobs = await getSearchResults(search._id)
+      setJobs(savedJobs)
+    } catch (err) { setError(err.response?.data?.detail || 'Could not load saved search details.') }
   }
 
   async function handleSignOut() { await signOut(auth); navigate('/login') }
 
   return <div className="jf-root">
-    <header className="jf-nav"><div className="jf-nav-inner"><button className="jf-brand" onClick={() => navigate('/dashboard')}>PingScore<span>Job Finder</span></button>
-      <nav><button onClick={() => navigate('/dashboard')}>Dashboard</button><button onClick={() => navigate('/history')}>Alert history</button><button onClick={() => navigate('/profile')}>{auth.currentUser?.displayName || 'Profile'}</button><button className="jf-logout" onClick={handleSignOut}>Sign out</button></nav>
+    <header className="jf-nav"><div className="jf-nav-inner"><button className="jf-brand" onClick={() => navigate('/job-finder')}>PingScore<span>Job Finder</span></button>
+      <nav><button onClick={() => navigate('/scheduler')}>Scheduler</button><button onClick={() => navigate('/history')}>Search history</button><button onClick={() => navigate('/profile')}>{auth.currentUser?.displayName || 'Profile'}</button><button className="jf-logout" onClick={handleSignOut}>Sign out</button></nav>
     </div></header>
     <main className="jf-main">
+
       <section className="jf-hero"><div><p className="jf-eyebrow">Personal job search</p><h1>Find work that fits <em>your</em> next step.</h1><p>Search across roles, industries, and company types. Review what the assistant understood before any provider is called.</p></div><button className="jf-new-search" onClick={() => { setSearchId(null); setFilters(null); setMessages([]); setJobs([]); setSearchInfo(null); setError('') }}>＋ New search</button></section>
       {error && <div className="jf-error" role="alert">{error}</div>}
+
       <div className="jf-layout">
+
         <div className="jf-workspace"><ChatWindow messages={messages} onSend={handleSend} busy={interpreting} />
           <ResumeUpload />
-          <SearchFormCard searchId={searchId} filters={filters} onChange={setFilters} onSearch={handleSearch} busy={running} sendEmail={sendEmail} onEmailChange={setSendEmail} />
-          <JobResults jobs={jobs} loading={running} searchInfo={searchInfo} />
+          <SearchFormCard filters={filters} onChange={setFilters} onSearch={handleSearch} busy={running} sendEmail={sendEmail} onEmailChange={setSendEmail} />
+          <JobResults jobs={jobs} loading={running} searchInfo={searchInfo} searchId={searchId} onRemoveJob={id => setJobs(previous => previous.filter(job => job._id !== id))} />
         </div>
         <aside className="jf-history-panel"><div className="jf-history-heading"><div><p className="jf-eyebrow">Your searches</p><h2>Recent finder runs</h2></div><button onClick={refreshSearches} aria-label="Refresh searches">↻</button></div>
           {searches.length === 0 ? <p className="jf-history-empty">Confirmed searches will appear here.</p> : <div className="jf-history-list">{searches.map(search => <button key={search._id} className={`jf-history-item ${search._id === searchId ? 'active' : ''}`} onClick={() => openSearch(search)}>
-            <strong>{(search.filters?.job_titles || ['Untitled search']).join(', ')}</strong><span>{(search.filters?.locations || []).join(', ') || 'Any location'}</span><small>{search.result_count || 0} results · {search.status}</small>
+            <strong>{formatSearchList(search.filters?.job_titles, 'Untitled search')}</strong><span>{formatSearchList(search.filters?.locations, 'Any location')}</span><small>{Number(search.result_count) || 0} results · {search.status || 'draft'}</small>
           </button>)}</div>}
           <div className="jf-provider-note"><strong>Sources</strong><p>Google Jobs via SerpApi, with JSearch as a fallback. Firecrawl may enrich a limited number of incomplete descriptions.</p></div>
         </aside>

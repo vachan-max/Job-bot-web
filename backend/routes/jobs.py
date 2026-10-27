@@ -7,6 +7,7 @@ from services.cover_letter import generate_cover_letter
 from services.email_sender import send_email
 from services.rate_limiter import check_and_increment, get_usage
 from services.resume_parser import get_resume_text
+from scheduler import get_scheduler_status
 from datetime import datetime, timezone, timedelta
 from bson import ObjectId
 import os
@@ -205,9 +206,12 @@ async def api_usage(user_data: dict = Depends(verify_token)):
 # ── GET scheduler status ─────────────────────────────────
 @router.get("/scheduler-status")
 async def scheduler_status(user_data: dict = Depends(verify_token)):
+    status = get_scheduler_status()
     return {
-        "status"     : "running",
-        "server_time": datetime.utcnow().strftime("%H:%M"),
-        "local_time" : datetime.now().strftime("%H:%M"),
+        "status"     : "running" if status["running"] else "stopped",
+        "running"    : status["running"],
+        "jobs"       : status["jobs"],
+        "server_time": datetime.now(timezone.utc).strftime("%H:%M"),
+        "local_time" : datetime.now().astimezone().strftime("%H:%M"),
         "message"    : "Scheduler checks every minute for matching schedule times",
     }

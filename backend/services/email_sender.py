@@ -1,4 +1,5 @@
 import os
+import html
 import resend
 from dotenv import load_dotenv
 
@@ -221,3 +222,40 @@ def send_no_jobs_email(to_email: str, name: str, reason: str = ""):
 
     except Exception as e:
         print(f"[email] No-jobs email error: {e}")
+
+
+def send_scheduled_matches_email(jobs: list, to_email: str, search_label: str = "your saved search"):
+    """Send compact, escaped job cards for newly discovered scheduled matches."""
+    if not jobs:
+        return False
+    try:
+        cards = []
+        for job in jobs:
+            title = html.escape(str(job.get("job_title") or "Job"))
+            company = html.escape(str(job.get("company") or "Company"))
+            location = html.escape(str(job.get("location") or "Location not listed"))
+            link = html.escape(str(job.get("apply_link") or "#"), quote=True)
+            score = job.get("match_score")
+            score_line = f'<p style="color:#55704b">Resume match: {int(score)}%</p>' if isinstance(score, (int, float)) else ""
+            reasons = job.get("match_reasons") or []
+            reason_list = "".join(f"<li>{html.escape(str(reason)[:180])}</li>" for reason in reasons[:3])
+            reason_html = f"<ul>{reason_list}</ul>" if reason_list else ""
+            cards.append(f'''<div style="padding:16px;margin:12px 0;background:#fff;border:1px solid #e5e7eb;border-radius:12px">
+                <h2 style="font-size:17px;margin:0 0 8px">{title}</h2><p style="color:#666;margin:0">{company} · {location}</p>
+                {score_line}{reason_html}<a href="{link}" style="display:inline-block;padding:9px 14px;background:#cc785c;color:#fff;text-decoration:none;border-radius:8px">View job</a>
+            </div>''')
+        html_body = f'''<!doctype html><html><body style="font-family:Arial,sans-serif;background:#f6f5f1;padding:20px">
+            <div style="max-width:620px;margin:auto"><h1>New jobs for {html.escape(search_label)}</h1>
+            <p>We found {len(jobs)} new job{'s' if len(jobs) != 1 else ''} in your scheduled search.</p>{''.join(cards)}
+            <p style="color:#888;font-size:12px">PingScore Job Finder</p></div></body></html>'''
+        response = resend.Emails.send({
+            "from": f"PingScore Job Bot <{FROM_EMAIL}>",
+            "to": [to_email],
+            "subject": f"PingScore — {len(jobs)} new job{'s' if len(jobs) != 1 else ''} for your search",
+            "html": html_body,
+        })
+        print(f"[email] Scheduled matches sent to {to_email} | id: {response['id']}")
+        return True
+    except Exception as exc:
+        print(f"[email] Scheduled matches email error: {exc}")
+        return False

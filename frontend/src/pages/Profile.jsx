@@ -36,7 +36,7 @@ export default function Profile() {
     : "U";
 
   return (
-    <div style={s.root}>
+    <div className="app-shell profile-shell" style={s.root}>
       <style>{`
         
         * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -82,10 +82,10 @@ export default function Profile() {
       `}</style>
 
       {/* NAV */}
-      <nav style={s.nav}>
+      <nav className="app-nav" style={s.nav}>
         <div style={s.navInner} className="nav-inner">
-          <button className="nav-btn btn-back" style={s.backBtn} onClick={() => navigate("/dashboard")}>
-            <IconBack /> <span className="btn-text">Dashboard</span>
+          <button className="nav-btn btn-back" style={s.backBtn} onClick={() => navigate("/job-finder")}>
+            <IconBack /> <span className="btn-text">Job Finder</span>
           </button>
           <span style={s.logo}>PingScore</span>
           <button className="nav-btn btn-logout" style={s.logoutBtn} onClick={handleSignOut}>
@@ -99,8 +99,8 @@ export default function Profile() {
         <div style={s.pageHeader} className="header-container">
           <div style={s.avatarLg} className="avatar-lg">{initials}</div>
           <div>
-            <h1 style={s.pageTitle} className="page-title">{user?.displayName || "Profile Settings"}</h1>
-            <p style={s.pageSub}>Manage your account information.</p>
+            <h1 style={s.pageTitle} className="page-title profile-page-title">{user?.displayName || "Profile Settings"}</h1>
+            <p style={s.pageSub} className="profile-page-subtitle">Manage your account information.</p>
           </div>
         </div>
 
@@ -109,8 +109,8 @@ export default function Profile() {
           <div style={{ display:"flex", flexDirection:"column", gap:24 }}>
             <section style={s.card} className="card">
               <div style={{ marginBottom: 24 }}>
-                <h2 style={s.cardTitle}>Account Identity</h2>
-                <p style={s.cardSub}>Personal details from your Google account.</p>
+                <h2 style={s.cardTitle} className="profile-card-title">Account Identity</h2>
+                <p style={s.cardSub} className="profile-card-subtitle">Personal details from your Google account.</p>
               </div>
               
               <div style={{ display:"flex", flexDirection:"column" }}>
@@ -120,14 +120,14 @@ export default function Profile() {
               </div>
             </section>
 
-            <section style={{ ...s.card, border: "1px solid rgba(239,68,68,0.2)" }} className="card">
-              <h2 style={{ ...s.cardTitle, color: "#dc2626" }}>Danger Zone</h2>
-              <p style={s.cardSub}>Actions that impact your active sessions.</p>
+            <section style={{ ...s.card, border: "1px solid rgba(239,68,68,0.2)" }} className="card danger-card">
+              <h2 style={{ ...s.cardTitle, color: "#dc2626" }} className="profile-card-title">Danger Zone</h2>
+              <p style={s.cardSub} className="profile-card-subtitle">Actions that impact your active sessions.</p>
               <button onClick={handleSignOut}
                 style={{ display:"flex", alignItems:"center", gap:8, marginTop:20, padding:"12px 20px",
                   borderRadius:14, border:"1.5px solid rgba(239,68,68,0.2)", background:"transparent",
                   color:"#dc2626", fontSize:14, fontWeight:600, fontFamily:"'DM Sans',sans-serif",
-                  cursor:"pointer", transition:"all .2s" }} className="btn-logout">
+                  cursor:"pointer", transition:"all .2s" }} className="btn-logout danger-action">
                 <IconLogout /> Sign out from all devices
               </button>
             </section>
@@ -141,11 +141,11 @@ export default function Profile() {
 
 function InfoRow({ icon, label, value, mono }) {
   return (
-    <div style={{ display:"flex", alignItems:"center", gap:16, padding:"16px 0", borderBottom:"1px solid #f1f5f9" }}>
-      <div style={{ color:"#cc785c", display:"flex", flexShrink:0, background: "#e8e0d2", padding: 8, borderRadius: 8 }}>{icon}</div>
+    <div className="profile-info-row" style={{ display:"flex", alignItems:"center", gap:16, padding:"16px 0", borderBottom:"1px solid #f1f5f9" }}>
+      <div className="profile-info-icon" style={{ color:"#cc785c", display:"flex", flexShrink:0, background: "#e8e0d2", padding: 8, borderRadius: 8 }}>{icon}</div>
       <div style={{ flex:1, overflow: "hidden" }}>
-        <p style={{ fontSize:11, fontWeight:700, color:"#94a3b8", marginBottom:4, textTransform:"uppercase", letterSpacing:"0.05em" }}>{label}</p>
-        <p style={{ fontSize:14, fontWeight: 600, color:"#1e293b", fontFamily: mono ? "monospace" : "inherit", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{value}</p>
+        <p className="profile-info-label" style={{ fontSize:11, fontWeight:700, color:"#94a3b8", marginBottom:4, textTransform:"uppercase", letterSpacing:"0.05em" }}>{label}</p>
+        <p className="profile-info-value" style={{ fontSize:14, fontWeight: 600, color:"#1e293b", fontFamily: mono ? "monospace" : "inherit", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{value}</p>
       </div>
     </div>
   );

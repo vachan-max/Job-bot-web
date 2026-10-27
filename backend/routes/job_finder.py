@@ -1,26 +1,32 @@
 import os
 from datetime import datetime, timedelta, timezone
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from bson import ObjectId
 from fastapi import APIRouter, Depends, HTTPException, Query
 from starlette.concurrency import run_in_threadpool
 
-from config import job_searches_col, job_search_results_col, preferences_col, users_col
+from config import job_searches_col, job_search_results_col, scheduled_job_links_col, preferences_col, users_col
 from firebase_auth import verify_token
-from models.job_finder import InterpretSearchRequest, InterpretSearchResponse, JobSearchFilters, RunSearchRequest
+from models.job_finder import InterpretSearchRequest, InterpretSearchResponse, JobSearchFilters, RunSearchRequest, SearchScheduleRequest
 from services.email_sender import send_email
 from services.job_finder.interpreter import interpret_filters
 from services.job_finder.pipeline import score_jobs, canonical_link, discover_jobs
+from services.cover_letter import generate_cover_letter
 from services.rate_limiter import check_and_increment
 from services.resume_parser import get_resume_text
+from scheduler import calculate_next_run
 
 router = APIRouter()
+saved_search_router = APIRouter()
 
 
 async def ensure_job_finder_indexes():
     await job_searches_col.create_index([("user_id", 1), ("updated_at", -1)])
     await job_search_results_col.create_index([("user_id", 1), ("search_id", 1), ("created_at", -1)])
     await job_search_results_col.create_index([("search_id", 1), ("dedupe_key", 1)], unique=True)
+    await job_searches_col.create_index([("schedule.enabled", 1), ("schedule.timezone", 1)])
+    await scheduled_job_links_col.create_index([("user_id", 1), ("search_id", 1), ("link", 1)], unique=True)
 
 
 async def _get_user(firebase_uid: str) -> dict:
@@ -97,6 +103,13 @@ async def interpret_search(payload: InterpretSearchRequest, user_data: dict = De
         "assistant_message": assistant_message,
         "updated_at": now,
     }
+    if not search_doc:
+        update.update({
+            "schedule_enabled": False, "schedule_time": "09:00", "timezone": None,
+            "email_enabled": True, "next_run": None, "last_run": None,
+            "last_run_status": None, "last_new_count": 0, "last_error": "",
+            "seen_job_ids": [],
+        })
     if search_doc:
         # A refinement changes the filters, so previous matches must not appear
         # as though they were found for the new draft.
@@ -278,10 +291,35 @@ async def run_search(search_id: str, payload: RunSearchRequest, user_data: dict 
 
 
 @router.get("/searches")
-async def list_searches(user_data: dict = Depends(verify_token), limit: int = Query(20, ge=1, le=50)):
+async def list_searches(
+    user_data: dict = Depends(verify_token),
+    limit: int = Query(20, ge=1, le=50),
+    offset: int = Query(0, ge=0),
+):
     user = await _get_user(user_data.get("uid", ""))
-    cursor = job_searches_col.find({"user_id": str(user["_id"])}).sort("updated_at", -1).limit(limit)
-    return {"searches": [_serialize(doc) async for doc in cursor]}
+    user_filter = {"user_id": str(user["_id"])}
+    total = await job_searches_col.count_documents(user_filter)
+    cursor = job_searches_col.find(user_filter).sort("updated_at", -1).skip(offset).limit(limit)
+    return {
+        "searches": [_serialize(doc) async for doc in cursor],
+        "total": total,
+        "offset": offset,
+        "limit": limit,
+    }
+
+
+@router.delete("/searches/{search_id}")
+async def delete_search(search_id: str, user_data: dict = Depends(verify_token)):
+    if not ObjectId.is_valid(search_id):
+        raise HTTPException(status_code=400, detail="Invalid search id")
+    user = await _get_user(user_data.get("uid", ""))
+    user_id = str(user["_id"])
+    result = await job_searches_col.delete_one({"_id": ObjectId(search_id), "user_id": user_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Search not found")
+    await job_search_results_col.delete_many({"search_id": search_id, "user_id": user_id})
+    await scheduled_job_links_col.delete_many({"search_id": search_id, "user_id": user_id})
+    return {"message": "Search deleted successfully"}
 
 
 @router.get("/searches/{search_id}/results")
@@ -301,3 +339,129 @@ async def get_search_results(
     cursor = job_search_results_col.find({"search_id": search_id, "user_id": user_id}).sort("match_score", -1).skip(offset).limit(limit)
     results = [_serialize(doc) async for doc in cursor]
     return {"search_id": search_id, "total": search.get("result_count", len(results)), "offset": offset, "results": results}
+
+
+@router.post("/searches/{search_id}/results/{result_id}/cover-letter")
+async def create_result_cover_letter(search_id: str, result_id: str, user_data: dict = Depends(verify_token)):
+    if not ObjectId.is_valid(search_id) or not ObjectId.is_valid(result_id):
+        raise HTTPException(status_code=400, detail="Invalid search or result id")
+    user = await _get_user(user_data.get("uid", ""))
+    user_id = str(user["_id"])
+    result = await job_search_results_col.find_one({
+        "_id": ObjectId(result_id), "search_id": search_id, "user_id": user_id,
+    })
+    if not result:
+        raise HTTPException(status_code=404, detail="Job result not found")
+    if result.get("cover_letter"):
+        return {"cover_letter": result["cover_letter"]}
+
+    usage = await check_and_increment("groq", user_id=user_id)
+    if not usage["allowed"]:
+        raise HTTPException(status_code=429, detail=usage["reason"])
+    preferences = await preferences_col.find_one({"user_id": user_id}) or {}
+    resume_text = await get_resume_text(user_id)
+    candidate_name = user.get("name") or user.get("display_name") or "Candidate"
+    generated = await run_in_threadpool(
+        generate_cover_letter, result, preferences, candidate_name, resume_text=resume_text or ""
+    )
+    cover_letter = generated.get("cover_letter", "")
+    if not cover_letter or cover_letter == "Could not generate a cover letter.":
+        raise HTTPException(status_code=503, detail="Could not generate a cover letter right now. Please try again.")
+    await job_search_results_col.update_one(
+        {"_id": ObjectId(result_id), "search_id": search_id, "user_id": user_id},
+        {"$set": {"cover_letter": cover_letter, "cover_letter_generated_at": datetime.now(timezone.utc)}},
+    )
+    return {"cover_letter": cover_letter}
+
+
+@router.get("/searches/{search_id}/schedule")
+async def get_search_schedule(search_id: str, user_data: dict = Depends(verify_token)):
+    if not ObjectId.is_valid(search_id):
+        raise HTTPException(status_code=400, detail="Invalid search id")
+    user = await _get_user(user_data.get("uid", ""))
+    search = await job_searches_col.find_one({"_id": ObjectId(search_id), "user_id": str(user["_id"])})
+    if not search:
+        raise HTTPException(status_code=404, detail="Search not found")
+    return {"schedule": _schedule_view(search)}
+
+
+def _schedule_view(search: dict) -> dict:
+    legacy = search.get("schedule") or {}
+    next_run = search.get("next_run")
+    if next_run is not None:
+        if next_run.tzinfo is None:
+            next_run = next_run.replace(tzinfo=timezone.utc)
+        next_run = next_run.astimezone(timezone.utc).isoformat()
+    last_run = search.get("last_run", legacy.get("last_run_at"))
+    if last_run is not None:
+        if last_run.tzinfo is None:
+            last_run = last_run.replace(tzinfo=timezone.utc)
+        last_run = last_run.astimezone(timezone.utc).isoformat()
+    return {
+        "schedule_enabled": search.get("schedule_enabled", legacy.get("enabled", False)),
+        "schedule_time": search.get("schedule_time", legacy.get("time", "09:00")),
+        "timezone": search.get("timezone") or legacy.get("timezone") or "",
+        "email_enabled": search.get("email_enabled", legacy.get("send_email", True)),
+        "next_run": next_run, "last_run": last_run,
+        "last_run_status": search.get("last_run_status", legacy.get("last_run_status")),
+        "last_new_count": search.get("last_new_count", legacy.get("last_run_count", 0)),
+        "last_error": search.get("last_error", legacy.get("last_error", "")),
+        "seen_job_ids": search.get("seen_job_ids", []),
+    }
+
+
+@saved_search_router.patch("/{search_id}/schedule")
+@router.put("/searches/{search_id}/schedule")
+async def update_search_schedule(search_id: str, payload: SearchScheduleRequest, user_data: dict = Depends(verify_token)):
+    if not ObjectId.is_valid(search_id):
+        raise HTTPException(status_code=400, detail="Invalid search id")
+    try:
+        ZoneInfo(payload.timezone)
+    except (ZoneInfoNotFoundError, ValueError):
+        raise HTTPException(status_code=422, detail="Choose a valid IANA timezone")
+    user = await _get_user(user_data.get("uid", ""))
+    user_id = str(user["_id"])
+    search = await job_searches_col.find_one({"_id": ObjectId(search_id), "user_id": user_id})
+    if not search:
+        raise HTTPException(status_code=404, detail="Search not found")
+    now = datetime.now(timezone.utc)
+    fields = payload.model_dump()
+    next_run = calculate_next_run(fields["schedule_time"], fields["timezone"], now) if fields["schedule_enabled"] else None
+    await job_searches_col.update_one({"_id": search["_id"], "user_id": user_id}, {"$set": {
+        **fields, "next_run": next_run, "updated_at": now,
+    }, "$setOnInsert": {"seen_job_ids": []}})
+    updated = await job_searches_col.find_one({"_id": search["_id"], "user_id": user_id})
+    return {"schedule": _schedule_view(updated)}
+
+
+@router.delete("/searches/{search_id}/schedule")
+async def pause_search_schedule(search_id: str, user_data: dict = Depends(verify_token)):
+    if not ObjectId.is_valid(search_id):
+        raise HTTPException(status_code=400, detail="Invalid search id")
+    user = await _get_user(user_data.get("uid", ""))
+    result = await job_searches_col.update_one(
+        {"_id": ObjectId(search_id), "user_id": str(user["_id"])},
+        {"$set": {"schedule_enabled": False, "next_run": None, "schedule.enabled": False, "schedule.updated_at": datetime.now(timezone.utc)}},
+    )
+    if not result.matched_count:
+        raise HTTPException(status_code=404, detail="Search not found")
+    return {"message": "Schedule paused", "enabled": False}
+
+
+@saved_search_router.post("/{search_id}/run-now")
+async def run_saved_search_now(search_id: str, user_data: dict = Depends(verify_token)):
+    if not ObjectId.is_valid(search_id):
+        raise HTTPException(status_code=400, detail="Invalid search id")
+    user = await _get_user(user_data.get("uid", ""))
+    user_id = str(user["_id"])
+    search = await job_searches_col.find_one({"_id": ObjectId(search_id), "user_id": user_id})
+    if not search:
+        raise HTTPException(status_code=404, detail="Search not found")
+    from scheduler import run_saved_search_once
+    try:
+        result = await run_saved_search_once(search, user)
+        return {key: value for key, value in result.items() if key != "jobs"} | {
+            "message": f"Found {result.get('new_count', 0)} new matches." if result.get("status") == "new_jobs" else (result.get("error") or "Email delivery failed." if result.get("status") == "error" else "No new matches found.")
+        }
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail=f"Saved search failed: {exc}") from exc

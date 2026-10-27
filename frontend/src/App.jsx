@@ -3,10 +3,10 @@ import { useState, useEffect } from 'react'
 import { onAuthStateChanged } from 'firebase/auth'
 import { auth } from './firebase'
 import Login     from './pages/Login'
-import Dashboard from './pages/Dashboard'
 import Profile   from './pages/Profile'
 import History   from './pages/History'
 import JobFinder from './pages/JobFinder'
+import Scheduler from './pages/Scheduler'
 
 function ThemeToggle() {
   const [theme, setTheme] = useState(() => localStorage.getItem('pingscore-theme') || 'light')
@@ -16,9 +16,16 @@ function ThemeToggle() {
     localStorage.setItem('pingscore-theme', theme)
   }, [theme])
 
-  return (
-    <></>
-  )
+  return <button
+    type="button"
+    className="theme-toggle"
+    onClick={() => setTheme(current => current === 'light' ? 'dark' : 'light')}
+    aria-label={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
+    title={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
+  >
+    <span aria-hidden="true">{theme === 'light' ? '☾' : '☀'}</span>
+    <span className="theme-toggle-label">{theme === 'light' ? 'Dark mode' : 'Light mode'}</span>
+  </button>
 }
 
 function PrivateRoute({ children }) {
@@ -68,7 +75,7 @@ function PublicRoute({ children }) {
     </div>
   )
 
-  return user ? <Navigate to="/dashboard" /> : children
+  return user ? <Navigate to="/job-finder" /> : children
 }
 
 export default function App() {
@@ -76,13 +83,14 @@ export default function App() {
     <BrowserRouter>
       <ThemeToggle />
       <Routes>
-        <Route path="/"          element={<Navigate to="/dashboard" />} />
+        <Route path="/"          element={<Navigate to="/job-finder" />} />
         <Route path="/login"     element={<PublicRoute><Login /></PublicRoute>} />
-        <Route path="/dashboard" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
+        <Route path="/dashboard" element={<PrivateRoute><Navigate to="/job-finder" replace /></PrivateRoute>} />
         <Route path="/profile"   element={<PrivateRoute><Profile /></PrivateRoute>} />
         <Route path="/history"   element={<PrivateRoute><History /></PrivateRoute>} />
+        <Route path="/scheduler" element={<PrivateRoute><Scheduler /></PrivateRoute>} />
         <Route path="/job-finder" element={<PrivateRoute><JobFinder /></PrivateRoute>} />
-        <Route path="*"          element={<Navigate to="/dashboard" />} />
+        <Route path="*"          element={<Navigate to="/job-finder" />} />
       </Routes>
     </BrowserRouter>
   )
