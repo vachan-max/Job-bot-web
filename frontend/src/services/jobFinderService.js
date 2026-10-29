@@ -46,6 +46,11 @@ export async function runSavedSearchNow(searchId) {
   return data
 }
 
+export async function deleteSavedSearch(searchId) {
+  const { data } = await api.delete(`/saved-searches/${searchId}`)
+  return data
+}
+
 export async function pauseSearchSchedule(searchId) {
   const { data } = await api.delete(`/jobs/finder/searches/${searchId}/schedule`)
   return data

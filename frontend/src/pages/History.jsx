@@ -2,7 +2,12 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { getSearchResults } from "../services/jobFinderService";
 import JobCard from "../components/job-finder/JobCard";
+import { deleteSearchResult } from "../services/jobFinderService";
 import api from "../api";
+
+function TrashIcon() {
+  return <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 7h16M10 11v6m4-6v6M5.5 7l1 13h11l1-13M9 7V4h6v3" /></svg>;
+}
 
 function formatDate(dateValue) {
   if (!dateValue) return "Date unavailable";
@@ -137,6 +142,17 @@ export default function History() {
     }
   }
 
+  async function deleteResult(searchId, resultId) {
+    try {
+      await deleteSearchResult(searchId, resultId);
+      setSearchResults(previous => ({ ...previous, [searchId]: (previous[searchId] || []).filter(job => job._id !== resultId) }));
+      setSearches(previous => previous.map(search => search._id === searchId ? { ...search, result_count: Math.max(0, (Number(search.result_count) || 0) - 1) } : search));
+    } catch (deleteResultError) {
+      console.error("Could not delete saved job result:", deleteResultError);
+      setResultErrors(previous => ({ ...previous, [searchId]: "Job result could not be deleted. Please try again." }));
+    }
+  }
+
   async function loadMoreSearches() {
     setLoadingMore(true);
     try {
@@ -260,7 +276,7 @@ export default function History() {
                         <div style={styles.resultMessage} role="alert">{resultErrors[search._id]} <button type="button" style={styles.retryButton} onClick={() => toggleSearch(search)}>Retry</button></div>
                       ) : searchResults[search._id]?.length ? (
                         <div className="history-job-card" style={styles.jobList}>
-                          {searchResults[search._id].map(job => <JobCard key={job._id || job.apply_link} job={job} searchId={search._id} />)}
+                          {searchResults[search._id].map(job => <JobCard key={job._id || job.apply_link} job={job} searchId={search._id} onDeleted={id => deleteResult(search._id, id)} />)}
                         </div>
                       ) : (
                         <div style={styles.resultMessage}>{search.status === "draft" ? "This draft has no saved job results yet." : search.status === "failed" ? "This search failed before any job results were saved." : "No saved job results for this search."}</div>
@@ -269,7 +285,7 @@ export default function History() {
                   )}
                   <div style={styles.rowActions}>
                     <button type="button" className="history-delete" style={styles.deleteButton} onClick={() => deleteSearch(search)} disabled={deletingSearchId === search._id}>
-                      {deletingSearchId === search._id ? "Deleting…" : "Delete search"}
+                      {deletingSearchId === search._id ? "Deleting…" : <><TrashIcon /><span>Delete search</span></>}
                     </button>
                   </div>
                 </div>
@@ -322,7 +338,7 @@ const styles = {
   resultMessage: { padding: "18px 12px", color: "var(--muted)", fontSize: 13, textAlign: "center" },
   retryButton: { marginLeft: 8, border: 0, background: "transparent", color: "var(--primary)", fontWeight: 700, cursor: "pointer" },
   rowActions: { display: "flex", justifyContent: "flex-end", padding: "0 16px 12px" },
-  deleteButton: { border: "1px solid var(--hairline)", borderRadius: 6, padding: "5px 9px", background: "var(--surface-card)", color: "var(--error)", fontSize: 11, fontWeight: 700, cursor: "pointer" },
+  deleteButton: { display: "inline-flex", alignItems: "center", gap: 6, border: "1px solid var(--hairline)", borderRadius: 6, padding: "5px 9px", background: "var(--surface-card)", color: "var(--error)", fontSize: 11, fontWeight: 700, cursor: "pointer" },
   deleteError: { margin: "0 0 12px", color: "var(--error)", fontSize: 13 },
   message: { padding: "48px 16px", textAlign: "center", color: "var(--muted)" },
   emptyState: { display: "flex", flexDirection: "column", alignItems: "center", gap: 8, padding: "54px 18px", textAlign: "center" },

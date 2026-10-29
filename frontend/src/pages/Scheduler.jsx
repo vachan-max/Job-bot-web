@@ -3,7 +3,7 @@ import { signOut } from 'firebase/auth'
 import { useNavigate } from 'react-router-dom'
 import { auth } from '../firebase'
 import SchedulerSection from '../components/job-finder/SchedulerSection'
-import { getSearches, getSearchSchedule, saveSearchSchedule, runSavedSearchNow, getSearchResults } from '../services/jobFinderService'
+import { getSearches, getSearchSchedule, saveSearchSchedule, runSavedSearchNow, getSearchResults, deleteSavedSearch } from '../services/jobFinderService'
 import './scheduler.css'
 
 const defaultSchedule = { schedule_enabled: false, schedule_time: '09:00', timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC', email_enabled: true }
@@ -19,6 +19,9 @@ export default function Scheduler() {
   const [runningId, setRunningId] = useState(null)
   const [runMessages, setRunMessages] = useState({})
   const [runJobs, setRunJobs] = useState({})
+  const [deletingId, setDeletingId] = useState(null)
+  const [deleteErrors, setDeleteErrors] = useState({})
+  const [toast, setToast] = useState('')
 
   useEffect(() => {
     let active = true
@@ -85,6 +88,21 @@ export default function Scheduler() {
     } finally { setRunningId(null) }
   }
 
+  async function deleteSearch(search) {
+    const name = (search.filters?.job_titles || ['Saved search']).join(', ')
+    if (!window.confirm(`Delete '${name}'? This also stops its daily emails. This can't be undone.`)) return
+    setDeletingId(search._id)
+    setDeleteErrors(previous => ({ ...previous, [search._id]: '' }))
+    try {
+      await deleteSavedSearch(search._id)
+      setSearches(previous => previous.filter(item => item._id !== search._id))
+      setToast('Saved search deleted')
+      window.setTimeout(() => setToast(''), 3000)
+    } catch (err) {
+      setDeleteErrors(previous => ({ ...previous, [search._id]: err.response?.data?.detail || 'Could not delete saved search.' }))
+    } finally { setDeletingId(null) }
+  }
+
   async function handleSignOut() { await signOut(auth); navigate('/login') }
 
   return <div className="jf-root scheduler-page">
@@ -95,8 +113,9 @@ export default function Scheduler() {
     <main className="jf-main">
       <section className="jf-hero"><div><p className="jf-eyebrow">Automation</p><h1>Manage your <em>job schedules.</em></h1><p>Choose which saved searches run daily, when they run, and whether new matches are emailed to you.</p></div></section>
       {error && <div className="jf-error" role="alert">{error}</div>}
+      {toast && <div className="jf-toast" role="status">{toast}</div>}
       {loading ? <div className="jf-scheduler-empty">Loading your saved searches…</div> : searches.length === 0 ? <section className="jf-panel jf-scheduler-empty-state"><h2>No saved searches yet</h2><p>Create a search in Job Finder first. It will appear here so you can schedule it.</p><button className="jf-primary" onClick={() => navigate('/job-finder')}>Open Job Finder</button></section> : <div className="jf-scheduler-list">
-        {searches.map(search => <SchedulerSection key={search._id} searchId={search._id} searchLabel={(search.filters?.job_titles || ['Saved search']).join(', ')} filters={search.filters} schedule={schedules[search._id] || defaultSchedule} onScheduleChange={value => updateSchedule(search._id, value)} onSave={() => save(search)} onRunNow={() => runNow(search)} saveState={saveStates[search._id]} saveError={saveErrors[search._id]} running={runningId === search._id} destinationEmail={auth.currentUser?.email} runMessage={runMessages[search._id]} runJobs={runJobs[search._id] || []} />)}
+        {searches.map(search => <SchedulerSection key={search._id} searchId={search._id} searchLabel={(search.filters?.job_titles || ['Saved search']).join(', ')} filters={search.filters} schedule={schedules[search._id] || defaultSchedule} onScheduleChange={value => updateSchedule(search._id, value)} onSave={() => save(search)} onRunNow={() => runNow(search)} onDelete={() => deleteSearch(search)} deleting={deletingId === search._id} deleteError={deleteErrors[search._id]} saveState={saveStates[search._id]} saveError={saveErrors[search._id]} running={runningId === search._id} destinationEmail={auth.currentUser?.email} runMessage={runMessages[search._id]} runJobs={runJobs[search._id] || []} />)}
       </div>}
     </main>
   </div>

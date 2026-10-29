@@ -128,6 +128,11 @@ async def run_scheduled_search(search: dict, user_override: dict | None = None, 
             if not email_check["allowed"]:
                 email_error = email_check.get("reason", "Email quota unavailable")
             elif user.get("email"):
+                # Check existence and ownership immediately before email delivery;
+                # deletion removes this document and thereby cancels an in-flight run.
+                current = await job_searches_col.find_one({"_id": search["_id"], "user_id": user_id, "lock_token": schedule.get("_lock_token")})
+                if not current:
+                    return
                 from starlette.concurrency import run_in_threadpool
                 email_sent = await run_in_threadpool(
                     send_scheduled_matches_email,
@@ -139,6 +144,11 @@ async def run_scheduled_search(search: dict, user_override: dict | None = None, 
                     email_error = "Email delivery failed."
             else:
                 email_error = "The account has no email address."
+
+        # Recheck after any email work so deletion during the run cannot persist results.
+        current = await job_searches_col.find_one({"_id": search["_id"], "user_id": user_id, "lock_token": schedule.get("_lock_token")})
+        if not current:
+            return
 
         # Record only delivered or intentionally email-disabled results.
         if unique_jobs and (email_sent or not schedule.get("email_enabled", True)):
@@ -156,7 +166,7 @@ async def run_scheduled_search(search: dict, user_override: dict | None = None, 
 
         status = "error" if email_error else ("new_jobs" if unique_jobs else "no_new_jobs")
         next_run = calculate_next_run(schedule.get("schedule_time", "09:00"), schedule.get("timezone", "UTC"), now)
-        await job_searches_col.update_one({"_id": search["_id"], "lock_token": schedule.get("_lock_token")}, {"$set": {
+        await job_searches_col.update_one({"_id": search["_id"], "user_id": user_id, "lock_token": schedule.get("_lock_token")}, {"$set": {
             "last_run": now, "last_run_status": status, "last_new_count": len(unique_jobs),
             "last_error": email_error, "next_run": next_run, "last_email_sent": email_sent,
             "last_provider": provider, "last_fallback_reason": fallback_reason,

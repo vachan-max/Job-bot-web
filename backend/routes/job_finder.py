@@ -341,6 +341,24 @@ async def get_search_results(
     return {"search_id": search_id, "total": search.get("result_count", len(results)), "offset": offset, "results": results}
 
 
+@router.delete("/searches/{search_id}/results/{result_id}")
+async def delete_search_result(search_id: str, result_id: str, user_data: dict = Depends(verify_token)):
+    if not ObjectId.is_valid(search_id) or not ObjectId.is_valid(result_id):
+        raise HTTPException(status_code=400, detail="Invalid search or result id")
+    user = await _get_user(user_data.get("uid", ""))
+    user_id = str(user["_id"])
+    search_filter = {"_id": ObjectId(search_id), "user_id": user_id}
+    if not await job_searches_col.find_one(search_filter):
+        raise HTTPException(status_code=404, detail="Search not found")
+    result = await job_search_results_col.delete_one({
+        "_id": ObjectId(result_id), "search_id": search_id, "user_id": user_id,
+    })
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Job result not found")
+    await job_searches_col.update_one(search_filter, {"$inc": {"result_count": -1}})
+    return {"message": "Job result deleted successfully"}
+
+
 @router.post("/searches/{search_id}/results/{result_id}/cover-letter")
 async def create_result_cover_letter(search_id: str, result_id: str, user_data: dict = Depends(verify_token)):
     if not ObjectId.is_valid(search_id) or not ObjectId.is_valid(result_id):
@@ -432,6 +450,20 @@ async def update_search_schedule(search_id: str, payload: SearchScheduleRequest,
     }, "$setOnInsert": {"seen_job_ids": []}})
     updated = await job_searches_col.find_one({"_id": search["_id"], "user_id": user_id})
     return {"schedule": _schedule_view(updated)}
+
+
+@saved_search_router.delete("/{search_id}")
+async def delete_saved_search(search_id: str, user_data: dict = Depends(verify_token)):
+    if not ObjectId.is_valid(search_id):
+        raise HTTPException(status_code=400, detail="Invalid search id")
+    user = await _get_user(user_data.get("uid", ""))
+    user_id = str(user["_id"])
+    search = await job_searches_col.find_one_and_delete({"_id": ObjectId(search_id), "user_id": user_id})
+    if not search:
+        raise HTTPException(status_code=404, detail="Search not found")
+    await job_search_results_col.delete_many({"search_id": search_id, "user_id": user_id})
+    await scheduled_job_links_col.delete_many({"search_id": search_id, "user_id": user_id})
+    return {"message": "Saved search deleted"}
 
 
 @router.delete("/searches/{search_id}/schedule")

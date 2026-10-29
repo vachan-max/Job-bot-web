@@ -20,7 +20,7 @@ function readableDate(value, timezone) {
   return `${dayLabel(date, timezone)}, ${date.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit', timeZone: timezone })}`
 }
 
-export default function SchedulerSection({ searchId, searchLabel, filters, schedule, onScheduleChange, onSave, onRunNow, saveState = 'idle', saveError = '', running, destinationEmail, runMessage, runJobs = [] }) {
+export default function SchedulerSection({ searchId, searchLabel, filters, schedule, onScheduleChange, onSave, onRunNow, onDelete, deleting = false, deleteError = '', saveState = 'idle', saveError = '', running, destinationEmail, runMessage, runJobs = [] }) {
   const [zoneQuery, setZoneQuery] = useState('')
   const filteredZones = useMemo(() => zones.filter(zone => zone.toLowerCase().includes(zoneQuery.toLowerCase())).slice(0, 80), [zoneQuery])
   const active = Boolean(schedule.schedule_enabled)
@@ -41,8 +41,9 @@ export default function SchedulerSection({ searchId, searchLabel, filters, sched
       <div className="jf-scheduler-meta"><p><strong>Next run</strong><span>{active ? readableDate(schedule.next_run, schedule.timezone) : 'Paused'}</span></p><p><strong>Last run</strong><span>{schedule.last_run ? `${readableDate(schedule.last_run, schedule.timezone)}${result ? `, ${result}` : ''}` : 'No scheduled run yet'}</span></p>{schedule.last_error && <p className="jf-scheduler-error"><strong>Last error</strong><span>{schedule.last_error}</span></p>}</div>
       {schedule.email_enabled === false && runJobs.length > 0 && <div className="jf-scheduled-results"><h3>New matches</h3>{runJobs.map((job, index) => <a key={job.dedupe_key || job.apply_link || index} href={job.apply_link} target="_blank" rel="noreferrer"><strong>{job.job_title}</strong><span>{[job.company, job.location].filter(Boolean).join(' · ')}</span></a>)}</div>}
       {runMessage && <p className="jf-scheduler-message" role="status">{runMessage}</p>}
-      <div className="jf-scheduler-actions"><button className={`jf-primary jf-save-${saveState}`} onClick={onSave} disabled={saveState === 'saving' || !(filters?.job_titles || []).length}>{saveState === 'saving' ? 'Saving...' : saveState === 'saved' ? 'Schedule saved ✓' : saveState === 'error' ? 'Failed, try again' : 'Save schedule'}</button><button className="jf-schedule-pause" onClick={onRunNow} disabled={running}>{running ? 'Sending...' : 'Send test now'}</button></div>
+      <div className="jf-scheduler-actions"><button className={`jf-primary jf-save-${saveState}`} onClick={onSave} disabled={saveState === 'saving' || !(filters?.job_titles || []).length}>{saveState === 'saving' ? 'Saving...' : saveState === 'saved' ? 'Schedule saved ✓' : saveState === 'error' ? 'Failed, try again' : 'Save schedule'}</button><button className="jf-schedule-pause" onClick={onRunNow} disabled={running}>{running ? 'Sending...' : 'Send test now'}</button><button className="jf-delete-search" onClick={onDelete} disabled={deleting}>{deleting ? 'Deleting...' : 'Delete saved search'}</button></div>
       {saveError && <p className="jf-save-error-message" role="alert">{saveError}</p>}
+      {deleteError && <p className="jf-delete-error-message" role="alert">{deleteError}</p>}
     </>}
   </section>
 }

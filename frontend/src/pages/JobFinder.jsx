@@ -113,9 +113,9 @@ export default function JobFinder() {
         <div className="jf-workspace"><ChatWindow messages={messages} onSend={handleSend} busy={interpreting} />
           <ResumeUpload />
           <SearchFormCard filters={filters} onChange={setFilters} onSearch={handleSearch} busy={running} sendEmail={sendEmail} onEmailChange={setSendEmail} />
-          <JobResults jobs={jobs} loading={running} searchInfo={searchInfo} searchId={searchId} onRemoveJob={id => setJobs(previous => previous.filter(job => job._id !== id))} />
+          <JobResults jobs={jobs} loading={running} searchInfo={searchInfo} searchId={searchId} onRemoveJob={id => { setJobs(previous => previous.filter(job => job._id !== id)); setSearches(previous => previous.map(search => search._id === searchId ? { ...search, result_count: Math.max(0, (Number(search.result_count) || 0) - 1) } : search)) }} />
         </div>
-        <aside className="jf-history-panel"><div className="jf-history-heading"><div><p className="jf-eyebrow">Your searches</p><h2>Recent finder runs</h2></div><button onClick={refreshSearches} aria-label="Refresh searches">↻</button></div>
+        <aside className="jf-history-panel"><div className="jf-history-heading"><div><p className="jf-eyebrow">Your searches</p><h2>Recent finder runs</h2></div></div>
           {searches.length === 0 ? <p className="jf-history-empty">Confirmed searches will appear here.</p> : <div className="jf-history-list">{searches.map(search => <button key={search._id} className={`jf-history-item ${search._id === searchId ? 'active' : ''}`} onClick={() => openSearch(search)}>
             <strong>{formatSearchList(search.filters?.job_titles, 'Untitled search')}</strong><span>{formatSearchList(search.filters?.locations, 'Any location')}</span><small>{Number(search.result_count) || 0} results · {search.status || 'draft'}</small>
           </button>)}</div>}
