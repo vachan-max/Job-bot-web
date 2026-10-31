@@ -6,7 +6,7 @@ import SchedulerSection from '../components/job-finder/SchedulerSection'
 import { getSearches, getSearchSchedule, saveSearchSchedule, runSavedSearchNow, getSearchResults, deleteSavedSearch } from '../services/jobFinderService'
 import './scheduler.css'
 
-const defaultSchedule = { schedule_enabled: false, schedule_time: '09:00', timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC', email_enabled: true }
+const defaultSchedule = { schedule_enabled: false, schedule_time: '09:00', timezone: 'Asia/Kolkata', email_enabled: true }
 
 export default function Scheduler() {
   const navigate = useNavigate()
@@ -33,7 +33,7 @@ export default function Scheduler() {
         const entries = await Promise.all(savedSearches.map(async search => {
           try {
             const schedule = await getSearchSchedule(search._id)
-            return [search._id, { ...schedule, timezone: schedule.timezone || defaultSchedule.timezone }]
+            return [search._id, { ...schedule, timezone: 'Asia/Kolkata' }]
           }
           catch { return [search._id, { ...defaultSchedule, filters: search.filters }] }
         }))
@@ -75,7 +75,10 @@ export default function Scheduler() {
     setRunningId(search._id)
     try {
       const result = await runSavedSearchNow(search._id)
-      setRunMessages(previous => ({ ...previous, [search._id]: result.message }))
+      const message = result.persistence_error
+        ? `${result.message} Email sent, but saving search results failed: ${result.persistence_error}`
+        : result.message
+      setRunMessages(previous => ({ ...previous, [search._id]: message }))
       const fresh = await getSearchSchedule(search._id)
       updateSchedule(search._id, fresh)
       if (fresh.email_enabled === false) {

@@ -1,6 +1,5 @@
 import os
 from datetime import datetime, timedelta, timezone
-from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from bson import ObjectId
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -10,12 +9,12 @@ from config import job_searches_col, job_search_results_col, scheduled_job_links
 from firebase_auth import verify_token
 from models.job_finder import InterpretSearchRequest, InterpretSearchResponse, JobSearchFilters, RunSearchRequest, SearchScheduleRequest
 from services.email_sender import send_email
-from services.job_finder.interpreter import interpret_filters
+from services.job_finder.interpreter import OFF_TOPIC_MESSAGE, interpret_filters, is_job_related
 from services.job_finder.pipeline import score_jobs, canonical_link, discover_jobs
 from services.cover_letter import generate_cover_letter
 from services.rate_limiter import check_and_increment
 from services.resume_parser import get_resume_text
-from scheduler import calculate_next_run
+from scheduler import calculate_next_run, SAVED_SEARCH_TIMEZONE
 
 router = APIRouter()
 saved_search_router = APIRouter()
@@ -83,6 +82,15 @@ async def interpret_search(payload: InterpretSearchRequest, user_data: dict = De
     if not groq_check["allowed"]:
         raise HTTPException(status_code=429, detail=groq_check["reason"])
     try:
+        job_related = await run_in_threadpool(is_job_related, payload.message)
+    except RuntimeError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    if not job_related:
+        return InterpretSearchResponse(
+            assistant_message=OFF_TOPIC_MESSAGE,
+            job_related=False,
+        )
+    try:
         filters, assistant_message = await run_in_threadpool(
             interpret_filters, payload.message, current, defaults
         )
@@ -105,7 +113,7 @@ async def interpret_search(payload: InterpretSearchRequest, user_data: dict = De
     }
     if not search_doc:
         update.update({
-            "schedule_enabled": False, "schedule_time": "09:00", "timezone": None,
+            "schedule_enabled": False, "schedule_time": "09:00", "timezone": SAVED_SEARCH_TIMEZONE,
             "email_enabled": True, "next_run": None, "last_run": None,
             "last_run_status": None, "last_new_count": 0, "last_error": "",
             "seen_job_ids": [],
@@ -129,6 +137,7 @@ async def interpret_search(payload: InterpretSearchRequest, user_data: dict = De
         search_id=search_id,
         assistant_message=assistant_message,
         filters=filters,
+        job_related=True,
         requires_clarification=needs_role,
         clarification_question="Which role or job title should I search for?" if needs_role else None,
     )
@@ -171,14 +180,21 @@ async def run_search(search_id: str, payload: RunSearchRequest, user_data: dict 
     try:
         serpapi_configured = bool(os.getenv("SERPAPI_API_KEY") or os.getenv("SERPAPI_KEY"))
         serpapi_allowed = False
+        serpapi_skip_reason = ""
         if serpapi_configured:
             serpapi_cost = min(3, max(1, len(filters.locations)))
             serp_check = await _check_provider_budget("serpapi", user_id, cost=serpapi_cost)
             if serp_check["allowed"]:
                 usage["serpapi"] = serpapi_cost
                 serpapi_allowed = True
+                print(f"[job_finder] SerpApi enabled for search {search_id} (cost={serpapi_cost})")
             else:
                 usage["serpapi_limited"] = 1
+                serpapi_skip_reason = serp_check.get("reason", "SerpApi provider limit reached.")
+                print(f"[job_finder] SerpApi skipped for search {search_id}: {serpapi_skip_reason}")
+        else:
+            serpapi_skip_reason = "SERPAPI_API_KEY is not configured."
+            print(f"[job_finder] SerpApi skipped for search {search_id}: key is not configured")
 
         async def allow_jsearch():
             jsearch_check = await check_and_increment("jsearch", user_id=user_id)
@@ -189,6 +205,8 @@ async def run_search(search_id: str, payload: RunSearchRequest, user_data: dict 
 
         try:
             jobs, provider, fallback_reason = await discover_jobs(filters, serpapi_allowed, allow_jsearch)
+            if provider == "jsearch" and serpapi_skip_reason:
+                fallback_reason = serpapi_skip_reason
         except RuntimeError as exc:
             if "quota is unavailable" in str(exc):
                 raise HTTPException(status_code=429, detail=str(exc)) from exc
@@ -204,7 +222,7 @@ async def run_search(search_id: str, payload: RunSearchRequest, user_data: dict 
         # Provider is capped to five records per search in the pipeline. Check the user's
         # remaining daily budget before each individual Firecrawl request.
         if os.getenv("FIRECRAWL_API_KEY"):
-            eligible = [job for job in jobs if len(job.get("description", "").strip()) < 300][:5]
+            eligible = [job for job in jobs if len(str(job.get("description") or "").strip()) < 300][:5]
             for job in eligible:
                 if not await consume_firecrawl():
                     break
@@ -215,11 +233,16 @@ async def run_search(search_id: str, payload: RunSearchRequest, user_data: dict 
                     job["details_source"] = "Firecrawl"
 
         resume_text = await get_resume_text(user_id)
-        if os.getenv("GROQ_API_KEY"):
+        if os.getenv("GROQ_API_KEY") and resume_text and resume_text.strip():
             groq_check = await check_and_increment("groq", user_id=user_id)
             if groq_check["allowed"]:
                 jobs = await run_in_threadpool(score_jobs, jobs, filters, resume_text)
                 usage["groq"] = 1
+        elif not resume_text or not resume_text.strip():
+            for job in jobs:
+                job.pop("match_score", None)
+                job.pop("match_reasons", None)
+                job["resume_missing"] = True
 
         jobs = jobs[:filters.results_limit]
         await job_search_results_col.delete_many({"search_id": search_id, "user_id": user_id})
@@ -400,6 +423,12 @@ async def get_search_schedule(search_id: str, user_data: dict = Depends(verify_t
     search = await job_searches_col.find_one({"_id": ObjectId(search_id), "user_id": str(user["_id"])})
     if not search:
         raise HTTPException(status_code=404, detail="Search not found")
+    if search.get("timezone") != SAVED_SEARCH_TIMEZONE:
+        await job_searches_col.update_one(
+            {"_id": search["_id"], "user_id": str(user["_id"])},
+            {"$set": {"timezone": SAVED_SEARCH_TIMEZONE}},
+        )
+        search["timezone"] = SAVED_SEARCH_TIMEZONE
     return {"schedule": _schedule_view(search)}
 
 
@@ -418,7 +447,7 @@ def _schedule_view(search: dict) -> dict:
     return {
         "schedule_enabled": search.get("schedule_enabled", legacy.get("enabled", False)),
         "schedule_time": search.get("schedule_time", legacy.get("time", "09:00")),
-        "timezone": search.get("timezone") or legacy.get("timezone") or "",
+        "timezone": SAVED_SEARCH_TIMEZONE,
         "email_enabled": search.get("email_enabled", legacy.get("send_email", True)),
         "next_run": next_run, "last_run": last_run,
         "last_run_status": search.get("last_run_status", legacy.get("last_run_status")),
@@ -433,10 +462,6 @@ def _schedule_view(search: dict) -> dict:
 async def update_search_schedule(search_id: str, payload: SearchScheduleRequest, user_data: dict = Depends(verify_token)):
     if not ObjectId.is_valid(search_id):
         raise HTTPException(status_code=400, detail="Invalid search id")
-    try:
-        ZoneInfo(payload.timezone)
-    except (ZoneInfoNotFoundError, ValueError):
-        raise HTTPException(status_code=422, detail="Choose a valid IANA timezone")
     user = await _get_user(user_data.get("uid", ""))
     user_id = str(user["_id"])
     search = await job_searches_col.find_one({"_id": ObjectId(search_id), "user_id": user_id})
@@ -444,7 +469,8 @@ async def update_search_schedule(search_id: str, payload: SearchScheduleRequest,
         raise HTTPException(status_code=404, detail="Search not found")
     now = datetime.now(timezone.utc)
     fields = payload.model_dump()
-    next_run = calculate_next_run(fields["schedule_time"], fields["timezone"], now) if fields["schedule_enabled"] else None
+    fields["timezone"] = SAVED_SEARCH_TIMEZONE
+    next_run = calculate_next_run(fields["schedule_time"], SAVED_SEARCH_TIMEZONE, now) if fields["schedule_enabled"] else None
     await job_searches_col.update_one({"_id": search["_id"], "user_id": user_id}, {"$set": {
         **fields, "next_run": next_run, "updated_at": now,
     }, "$setOnInsert": {"seen_job_ids": []}})

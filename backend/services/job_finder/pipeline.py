@@ -54,6 +54,17 @@ def _dedupe(jobs: list[dict]) -> list[dict]:
 
 
 def score_jobs(jobs: list[dict], filters: JobSearchFilters, resume_text: str = "") -> list[dict]:
+    # These are resume match scores. Profile filters alone are not enough to
+    # produce one, so leave the score unset when no resume was uploaded.
+    if not resume_text or not resume_text.strip():
+        for job in jobs:
+            job.pop("match_score", None)
+            job.pop("match_reasons", None)
+            job["resume_missing"] = True
+        return jobs
+
+    for job in jobs:
+        job["resume_missing"] = False
     api_key = os.getenv("GROQ_API_KEY")
     if not api_key or not jobs:
         return jobs

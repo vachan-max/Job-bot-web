@@ -52,6 +52,10 @@ export default function JobFinder() {
     setInterpreting(true)
     try {
       const result = await interpretSearch(message, searchId)
+      if (!result.job_related) {
+        setMessages(previous => [...previous, { role: 'assistant', content: result.assistant_message }])
+        return
+      }
       setSearchId(result.search_id)
       setFilters(result.filters)
       setMessages(previous => [...previous, { role: 'assistant', content: result.assistant_message }])

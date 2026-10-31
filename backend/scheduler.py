@@ -1,5 +1,6 @@
 import os
 import uuid
+import traceback
 from datetime import datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
@@ -12,13 +13,16 @@ from services.rate_limiter import check_and_increment
 from services.resume_parser import get_resume_text
 
 IST = timezone(timedelta(hours=5, minutes=30))
+SAVED_SEARCH_TIMEZONE = "Asia/Kolkata"
 _scheduler = None
 
 
-def calculate_next_run(schedule_time: str, timezone_name: str, now: datetime | None = None) -> datetime:
+def calculate_next_run(schedule_time: str, timezone_name: str | None = None, now: datetime | None = None) -> datetime:
     """Return the next scheduled instant as an aware UTC datetime."""
     from datetime import time as day_time
-    zone = ZoneInfo(timezone_name)
+    # Saved-search schedules use one fixed timezone. Ignore stale timezone values
+    # from older records and older clients, including explicit nulls.
+    zone = ZoneInfo(SAVED_SEARCH_TIMEZONE)
     now = now or datetime.now(timezone.utc)
     if now.tzinfo is None:
         now = now.replace(tzinfo=timezone.utc)
@@ -92,7 +96,7 @@ async def run_scheduled_search(search: dict, user_override: dict | None = None, 
         jobs, provider, fallback_reason = await discover_jobs(filters, serpapi_allowed, allow_jsearch)
         if os.getenv("FIRECRAWL_API_KEY"):
             from services.job_finder.providers.firecrawl import enrich_description
-            for job in [item for item in jobs if len(item.get("description", "").strip()) < 300][:5]:
+            for job in [item for item in jobs if len(str(item.get("description") or "").strip()) < 300][:5]:
                 check = await check_and_increment("firecrawl", user_id="global")
                 if check["allowed"]:
                     check = await check_and_increment("firecrawl", user_id=user_id)
@@ -152,35 +156,56 @@ async def run_scheduled_search(search: dict, user_override: dict | None = None, 
 
         # Record only delivered or intentionally email-disabled results.
         if unique_jobs and (email_sent or not schedule.get("email_enabled", True)):
-            await job_search_results_col.delete_many({"search_id": search_id, "user_id": user_id})
             docs = []
             for job in unique_jobs:
                 job.update({"search_id": search_id, "user_id": user_id, "created_at": now})
                 docs.append(job)
             if docs:
-                await job_search_results_col.insert_many(docs, ordered=False)
-            await scheduled_job_links_col.insert_many([
-                {"user_id": user_id, "search_id": search_id, "link": job["dedupe_key"], "sent_at": now}
+                await job_search_results_col.bulk_write([
+                    __import__("pymongo").UpdateOne(
+                        {"search_id": search_id, "user_id": user_id, "dedupe_key": job["dedupe_key"]},
+                        {"$set": job},
+                        upsert=True,
+                    )
+                    for job in docs
+                ], ordered=False)
+            await scheduled_job_links_col.bulk_write([
+                __import__("pymongo").UpdateOne(
+                    {"user_id": user_id, "search_id": search_id, "link": job["dedupe_key"]},
+                    {"$setOnInsert": {"user_id": user_id, "search_id": search_id, "link": job["dedupe_key"], "sent_at": now}},
+                    upsert=True,
+                )
                 for job in unique_jobs
             ], ordered=False)
 
         status = "error" if email_error else ("new_jobs" if unique_jobs else "no_new_jobs")
-        next_run = calculate_next_run(schedule.get("schedule_time", "09:00"), schedule.get("timezone", "UTC"), now)
+        next_run = calculate_next_run(schedule.get("schedule_time") or "09:00", SAVED_SEARCH_TIMEZONE, now)
         await job_searches_col.update_one({"_id": search["_id"], "user_id": user_id, "lock_token": schedule.get("_lock_token")}, {"$set": {
             "last_run": now, "last_run_status": status, "last_new_count": len(unique_jobs),
-            "last_error": email_error, "next_run": next_run, "last_email_sent": email_sent,
+            "timezone": SAVED_SEARCH_TIMEZONE, "last_error": email_error,
+            "last_persistence_error": "", "next_run": next_run, "last_email_sent": email_sent,
             "last_provider": provider, "last_fallback_reason": fallback_reason,
             "last_usage": usage, "seen_job_ids": list(set(search.get("seen_job_ids", [])) | set(new_ids)),
         }})
         return {"status": status, "new_count": len(unique_jobs), "email_sent": email_sent, "jobs": unique_jobs}
     except Exception as exc:
-        print(f"[scheduler] Saved search {search_id} failed: {exc}")
-        next_run = calculate_next_run(schedule.get("schedule_time", "09:00"), schedule.get("timezone", "UTC"), now)
+        print(f"[scheduler] Saved search {search_id} failed: {exc}\n{traceback.format_exc()}")
+        next_run = calculate_next_run(schedule.get("schedule_time") or "09:00", SAVED_SEARCH_TIMEZONE, now)
         await job_searches_col.update_one({"_id": search["_id"], "lock_token": schedule.get("_lock_token")}, {"$set": {
-            "last_run": now, "last_run_status": "error", "last_new_count": 0,
-            "last_error": str(exc)[:500], "next_run": next_run,
+            "last_run": now, "last_run_status": "error", "last_new_count": len(locals().get("unique_jobs", [])),
+            "timezone": SAVED_SEARCH_TIMEZONE, "last_error": str(exc)[:500],
+            "last_persistence_error": str(exc)[:500],
+            "last_email_sent": bool(locals().get("email_sent")), "next_run": next_run,
         }})
         if force:
+            # The email may already have been accepted by the provider. Return a
+            # partial-success result instead of inviting a retry that sends twice.
+            if locals().get("email_sent"):
+                return {
+                    "status": "new_jobs", "new_count": len(locals().get("unique_jobs", [])),
+                    "email_sent": True, "persistence_error": str(exc)[:500],
+                    "jobs": locals().get("unique_jobs", []),
+                }
             raise
         return {"status": "error", "new_count": 0, "error": str(exc)[:500]}
     finally:

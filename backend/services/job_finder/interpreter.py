@@ -3,7 +3,37 @@ import os
 import re
 
 from models.job_finder import JobSearchFilters
-from services.groq_chat import create_groq_chat
+from services.groq_chat import create_job_finder_chat
+
+
+OFF_TOPIC_MESSAGE = "Sorry, I’m only used to search for jobs. Tell me the role and location you’re interested in."
+
+
+def is_job_related(message: str) -> bool:
+    """Classify a message before it can create or update a saved draft."""
+    api_key = os.getenv("GROQ_API_KEY")
+    if not api_key:
+        raise RuntimeError("Natural-language search is unavailable because GROQ_API_KEY is not configured.")
+
+    prompt = f'''Classify whether the user's message is about finding jobs or refining a job search.
+Return JSON with exactly one boolean key: job_related.
+Job-related includes job titles, employment, career opportunities, locations for jobs, and changes to job search filters.
+Unrelated includes requests about hotels, travel, restaurants, weather, general knowledge, and other non-job topics.
+When ambiguous, classify as job-related only if the user clearly refers to a job search or career opportunity.
+User message: {message}'''
+    try:
+        response = create_job_finder_chat(
+            model_kwargs={"response_format": {"type": "json_object"}},
+            temperature=0,
+            max_tokens=100,
+        ).invoke(prompt)
+        data = json.loads(response.content or "{}")
+        value = data.get("job_related")
+        if not isinstance(value, bool):
+            raise ValueError("Classifier response did not contain a boolean job_related value")
+        return value
+    except Exception as exc:
+        raise RuntimeError("The request could not be classified. Please try again.") from exc
 
 
 def interpret_filters(message: str, current: dict, defaults: dict) -> tuple[JobSearchFilters, str]:
@@ -26,7 +56,7 @@ Write a short conversational assistant_message summarizing the interpreted reque
 Existing filters/defaults: {json.dumps(baseline, ensure_ascii=False)}
 User message: {message}
 """
-    response = create_groq_chat(
+    response = create_job_finder_chat(
         model_kwargs={"response_format": {"type": "json_object"}},
         temperature=0,
         max_tokens=1200,

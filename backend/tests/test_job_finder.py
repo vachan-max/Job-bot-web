@@ -4,7 +4,7 @@ import unittest
 from unittest.mock import AsyncMock, Mock, patch
 
 from models.job_finder import JobSearchFilters
-from services.job_finder.interpreter import interpret_filters
+from services.job_finder.interpreter import interpret_filters, is_job_related
 from services.job_finder.pipeline import canonical_link, discover_jobs
 from services.job_finder.providers import serpapi
 
@@ -26,13 +26,95 @@ class FilterModelTests(unittest.TestCase):
             "experience_level": "Fresher", "skills": ["Excel"], "keywords": [],
             "employment_types": [], "remote_preference": "any", "date_posted": "week", "results_limit": 12,
         }
-        with patch.dict(os.environ, {"GROQ_API_KEY": "test-key"}), patch("services.job_finder.interpreter.create_groq_chat") as groq:
+        with patch.dict(os.environ, {"GROQ_API_KEY": "test-key"}), patch("services.job_finder.interpreter.create_job_finder_chat") as groq:
             groq.return_value.invoke.return_value = fake_response
             filters, message = interpret_filters("Change location to Mumbai", baseline, {})
         self.assertEqual(filters.locations, ["Mumbai"])
         self.assertEqual(filters.job_titles, ["Data Analyst"])
         self.assertEqual(filters.results_limit, 12)
         self.assertEqual(message, "Updated location.")
+
+    def test_intent_classifier_returns_boolean(self):
+        fake_response = Mock()
+        fake_response.content = json.dumps({"job_related": False})
+        with patch.dict(os.environ, {"GROQ_API_KEY": "test-key"}), patch("services.job_finder.interpreter.create_job_finder_chat") as groq:
+            groq.return_value.invoke.return_value = fake_response
+            self.assertFalse(is_job_related("Find the best hotel in Mumbai"))
+
+    def test_groq_chat_models_are_independently_configurable(self):
+        with patch.dict(os.environ, {"GROQ_API_KEY": "test-key"}, clear=True), patch("services.groq_chat.ChatGroq") as chat:
+            from services.groq_chat import create_groq_chat, create_job_finder_chat
+            create_groq_chat()
+            create_job_finder_chat()
+        self.assertEqual(chat.call_args_list[0].kwargs["model"], "openai/gpt-oss-120b")
+        self.assertEqual(chat.call_args_list[1].kwargs["model"], "openai/gpt-oss-20b")
+
+
+class InterpretationRouteTests(unittest.IsolatedAsyncioTestCase):
+    async def test_job_related_message_still_creates_a_saved_draft(self):
+        from bson import ObjectId
+        from routes.job_finder import interpret_search
+        from models.job_finder import InterpretSearchRequest
+
+        inserted_id = ObjectId()
+        with patch("routes.job_finder.users_col.find_one", new=AsyncMock(return_value={"_id": "user-1"})), \
+             patch("routes.job_finder.preferences_col.find_one", new=AsyncMock(return_value={})), \
+             patch("routes.job_finder.job_searches_col.find_one", new=AsyncMock(return_value=None)), \
+             patch("routes.job_finder.job_searches_col.insert_one", new=AsyncMock(return_value=Mock(inserted_id=inserted_id))) as insert, \
+             patch("routes.job_finder.check_and_increment", new=AsyncMock(return_value={"allowed": True})), \
+             patch("routes.job_finder.is_job_related", return_value=True), \
+             patch("routes.job_finder.interpret_filters", return_value=(JobSearchFilters(job_titles=["Engineer"]), "Review the filters.")):
+            response = await interpret_search(InterpretSearchRequest(message="Find engineer jobs in Mumbai"), {"uid": "firebase-1"})
+
+        self.assertTrue(response.job_related)
+        self.assertEqual(response.search_id, str(inserted_id))
+        self.assertEqual(response.filters.job_titles, ["Engineer"])
+        saved_document = insert.await_args.args[0]
+        self.assertEqual([entry["content"] for entry in saved_document["conversation"] if entry["role"] == "user"], ["Find engineer jobs in Mumbai"])
+
+    async def test_unrelated_new_message_is_not_persisted(self):
+        from routes.job_finder import interpret_search
+        from models.job_finder import InterpretSearchRequest
+
+        with patch("routes.job_finder.users_col.find_one", new=AsyncMock(return_value={"_id": "user-1"})), \
+             patch("routes.job_finder.preferences_col.find_one", new=AsyncMock(return_value={})), \
+             patch("routes.job_finder.job_searches_col.find_one", new=AsyncMock(return_value=None)), \
+             patch("routes.job_finder.job_searches_col.insert_one", new=AsyncMock()) as insert, \
+             patch("routes.job_finder.job_searches_col.update_one", new=AsyncMock()) as update, \
+             patch("routes.job_finder.check_and_increment", new=AsyncMock(return_value={"allowed": True})), \
+             patch("routes.job_finder.is_job_related", return_value=False), \
+             patch("routes.job_finder.interpret_filters") as parse:
+            response = await interpret_search(InterpretSearchRequest(message="Find the best hotel in Mumbai"), {"uid": "firebase-1"})
+
+        self.assertFalse(response.job_related)
+        self.assertIsNone(response.search_id)
+        self.assertIn("only used to search for jobs", response.assistant_message)
+        insert.assert_not_awaited()
+        update.assert_not_awaited()
+        parse.assert_not_called()
+
+    async def test_unrelated_followup_leaves_saved_draft_untouched(self):
+        from bson import ObjectId
+        from routes.job_finder import interpret_search
+        from models.job_finder import InterpretSearchRequest
+
+        search_id = str(ObjectId())
+        search_doc = {"_id": ObjectId(search_id), "user_id": "user-1", "filters": {"job_titles": ["Engineer"]}, "conversation": [{"role": "user", "content": "Find engineering jobs"}]}
+        with patch("routes.job_finder.users_col.find_one", new=AsyncMock(return_value={"_id": "user-1"})), \
+             patch("routes.job_finder.preferences_col.find_one", new=AsyncMock(return_value={})), \
+             patch("routes.job_finder.job_searches_col.find_one", new=AsyncMock(return_value=search_doc)), \
+             patch("routes.job_finder.job_searches_col.insert_one", new=AsyncMock()) as insert, \
+             patch("routes.job_finder.job_searches_col.update_one", new=AsyncMock()) as update, \
+             patch("routes.job_finder.check_and_increment", new=AsyncMock(return_value={"allowed": True})), \
+             patch("routes.job_finder.is_job_related", return_value=False), \
+             patch("routes.job_finder.interpret_filters") as parse:
+            response = await interpret_search(InterpretSearchRequest(message="Find the best hotel in Mumbai", search_id=search_id), {"uid": "firebase-1"})
+
+        self.assertFalse(response.job_related)
+        self.assertIsNone(response.search_id)
+        insert.assert_not_awaited()
+        update.assert_not_awaited()
+        parse.assert_not_called()
 
 
 class ProviderTests(unittest.TestCase):

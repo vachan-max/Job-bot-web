@@ -12,7 +12,7 @@ class JobSearchFilters(BaseModel):
     keywords: list[str] = Field(default_factory=list, max_length=20)
     employment_types: list[str] = Field(default_factory=list, max_length=8)
     remote_preference: Literal["any", "remote", "hybrid", "on-site"] = "any"
-    date_posted: Literal["any", "day", "3days", "week", "month"] = "week"
+    date_posted: Literal["any", "day", "3days", "week", "month"] = "any"
     results_limit: int = Field(default=20, ge=1, le=30)
 
     @field_validator("job_titles", "industries", "locations", "skills", "keywords", "employment_types")
@@ -27,9 +27,10 @@ class InterpretSearchRequest(BaseModel):
 
 
 class InterpretSearchResponse(BaseModel):
-    search_id: str
+    search_id: Optional[str] = None
     assistant_message: str
-    filters: JobSearchFilters
+    filters: Optional[JobSearchFilters] = None
+    job_related: bool = True
     requires_clarification: bool = False
     clarification_question: Optional[str] = None
 
@@ -42,7 +43,7 @@ class RunSearchRequest(BaseModel):
 class SearchScheduleRequest(BaseModel):
     schedule_enabled: bool = True
     schedule_time: str = Field(default="09:00", pattern=r"^([01]\d|2[0-3]):[0-5]\d$")
-    timezone: str = Field(default="UTC", min_length=1, max_length=80)
+    timezone: str | None = Field(default="Asia/Kolkata", max_length=80)
     email_enabled: bool = True
 
 

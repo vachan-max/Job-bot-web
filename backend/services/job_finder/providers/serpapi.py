@@ -45,7 +45,9 @@ def search_jobs(filters: dict) -> list[dict]:
             response.raise_for_status()
             payload = response.json()
         except requests.RequestException as exc:
-            raise ProviderError(f"SerpApi request failed: {exc}") from exc
+            # Requests exceptions include the full URL, which contains the API key.
+            safe_error = str(exc).replace(api_key, "[REDACTED]")
+            raise ProviderError(f"SerpApi request failed: {safe_error}") from exc
         if payload.get("error"):
             raise ProviderError(str(payload["error"]))
         for item in payload.get("jobs_results", []):

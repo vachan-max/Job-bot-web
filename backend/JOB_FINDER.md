@@ -10,7 +10,8 @@ Configure these variables in the backend environment (never in Vite or browser v
 - `SERPAPI_API_KEY` — primary Google Jobs search provider. `SERPAPI_KEY` is also accepted.
 - `FIRECRAWL_API_KEY` — optional; enriches up to five results with short descriptions per search.
 - Existing `RAPIDAPI_KEY_1`, `RAPIDAPI_KEY_2`, etc. — JSearch fallback credentials.
-- `GROQ_MODEL` — optional model override; defaults to `openai/gpt-oss-120b`.
+- `GROQ_MODEL` — optional model override for job scoring and cover-letter generation; defaults to `openai/gpt-oss-120b`.
+- `JOB_FINDER_GROQ_MODEL` — optional model override for Job Finder intent classification and filter interpretation; defaults to `openai/gpt-oss-20b`.
 - Groq chat completions use LangChain's `ChatGroq` integration (`langchain-groq`).
 
 Per-user provider limits are configured in `services/rate_limiter.py`. Search documents and results are stored in the `job_searches` and `job_search_results` MongoDB collections. The server creates their indexes during startup.
