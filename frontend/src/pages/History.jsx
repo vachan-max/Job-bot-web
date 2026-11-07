@@ -4,6 +4,7 @@ import { getSearchResults } from "../services/jobFinderService";
 import JobCard from "../components/job-finder/JobCard";
 import { deleteSearchResult } from "../services/jobFinderService";
 import api from "../api";
+import AppNavigation from "../components/AppNavigation";
 
 function TrashIcon() {
   return <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 7h16M10 11v6m4-6v6M5.5 7l1 13h11l1-13M9 7V4h6v3" /></svg>;
@@ -176,23 +177,28 @@ export default function History() {
         .history-page .history-job-card { text-align: left; }
         .history-page .history-job-card .jf-job-card { background: var(--surface-card); }
         @media (max-width: 680px) {
+          .history-page .main-content { padding: 28px 14px 56px !important; }
+          .history-page .history-panel { padding: 15px !important; }
           .history-page .history-toolbar { align-items: stretch !important; flex-direction: column; }
           .history-page .history-search { min-width: 0 !important; width: 100%; }
+          .history-page .history-toolbar label { justify-content: space-between; }
+          .history-page .history-toolbar select { min-width: 0; flex: 1; }
           .history-page .history-row { align-items: flex-start !important; flex-direction: column; }
           .history-page .history-row-meta { align-items: center !important; flex-direction: row !important; flex-wrap: wrap; width: 100%; }
           .history-page .history-delete { margin-left: auto; }
           .history-page .history-entry { padding: 0 !important; }
           .history-page .history-details { padding: 0 12px 12px !important; }
+          .history-page .history-row > span:first-child { overflow-wrap: anywhere; }
+          .history-page .history-job-card .jf-job-card { padding: 14px; }
         }
       `}</style>
 
-      <nav className="app-nav" style={styles.nav}>
-        <div className="nav-inner" style={styles.navInner}>
-          <button className="nav-btn" style={styles.backBtn} onClick={() => navigate("/job-finder")}>← <span>Job Finder</span></button>
-          <span style={styles.logo}>Search History</span>
-          <button style={styles.newSearch} onClick={() => navigate("/job-finder")}>＋ New search</button>
-        </div>
-      </nav>
+      <AppNavigation
+        variant="history"
+        brand="Search History"
+        leftAction={<button className="nav-btn" style={styles.backBtn} onClick={() => navigate("/job-finder")}>← <span>Job Finder</span></button>}
+        rightAction={<button className="history-new-search" style={styles.newSearch} onClick={() => navigate("/job-finder")}>＋ New search</button>}
+      />
 
       <main className="main-content" style={styles.main}>
         <header style={styles.heading}>
@@ -203,7 +209,7 @@ export default function History() {
           </div>
         </header>
 
-        <section style={styles.panel} aria-label="Saved Job Finder searches">
+        <section className="history-panel" style={styles.panel} aria-label="Saved Job Finder searches">
           <div className="history-toolbar" style={styles.toolbar}>
             <input
               className="history-search"
@@ -305,10 +311,7 @@ export default function History() {
 
 const styles = {
   root: { minHeight: "100vh", background: "var(--canvas)", color: "var(--body-strong)", fontFamily: "var(--sans)" },
-  nav: { background: "var(--canvas)", borderBottom: "1px solid var(--hairline)", position: "sticky", top: 0, zIndex: 10 },
-  navInner: { maxWidth: 1160, margin: "0 auto", padding: "0 32px", height: 68, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16 },
   backBtn: { display: "flex", alignItems: "center", gap: 8, padding: "9px 12px", border: 0, borderRadius: 8, background: "transparent", color: "var(--muted)", fontWeight: 600, cursor: "pointer" },
-  logo: { fontFamily: "var(--display)", fontSize: 25, color: "var(--ink)" },
   newSearch: { border: "1px solid var(--hairline)", borderRadius: 8, background: "var(--surface-card)", color: "var(--ink)", padding: "10px 14px", fontWeight: 700, cursor: "pointer" },
   main: { maxWidth: 1160, margin: "0 auto", padding: "42px 32px 72px" },
   heading: { marginBottom: 26 },

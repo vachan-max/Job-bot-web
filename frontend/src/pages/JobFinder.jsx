@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react'
-import { signOut } from 'firebase/auth'
-import { useNavigate, useSearchParams } from 'react-router-dom'
-import { auth } from '../firebase'
+import { useSearchParams } from 'react-router-dom'
+import AppNavigation from '../components/AppNavigation'
 import ChatWindow from '../components/job-finder/ChatWindow'
 import ResumeUpload from '../components/job-finder/ResumeUpload'
 import SearchFormCard from '../components/job-finder/SearchFormCard'
@@ -10,7 +9,6 @@ import { getSearches, getSearchResults, interpretSearch, runSearch } from '../se
 import './job-finder.css'
 
 export default function JobFinder() {
-  const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const [messages, setMessages] = useState([])
   const [searchId, setSearchId] = useState(null)
@@ -18,6 +16,7 @@ export default function JobFinder() {
   const [jobs, setJobs] = useState([])
   const [searchInfo, setSearchInfo] = useState(null)
   const [searches, setSearches] = useState([])
+  const [historyOpen, setHistoryOpen] = useState(false)
   const [interpreting, setInterpreting] = useState(false)
   const [running, setRunning] = useState(false)
   const [error, setError] = useState('')
@@ -101,12 +100,8 @@ export default function JobFinder() {
     } catch (err) { setError(err.response?.data?.detail || 'Could not load saved search details.') }
   }
 
-  async function handleSignOut() { await signOut(auth); navigate('/login') }
-
   return <div className="jf-root">
-    <header className="jf-nav"><div className="jf-nav-inner"><button className="jf-brand" onClick={() => navigate('/job-finder')}>PingScore<span>Job Finder</span></button>
-      <nav><button onClick={() => navigate('/scheduler')}>Scheduler</button><button onClick={() => navigate('/history')}>Search history</button><button onClick={() => navigate('/profile')}>{auth.currentUser?.displayName || 'Profile'}</button><button className="jf-logout" onClick={handleSignOut}>Sign out</button></nav>
-    </div></header>
+    <AppNavigation brand={<>PingScore<span className="app-navigation-brand-subtitle">Job Finder</span></>} />
     <main className="jf-main">
 
       <section className="jf-hero"><div><p className="jf-eyebrow">Personal job search</p><h1>Find work that fits <em>your</em> next step.</h1><p>Search across roles, industries, and company types. Review what the assistant understood before any provider is called.</p></div><button className="jf-new-search" onClick={() => { setSearchId(null); setFilters(null); setMessages([]); setJobs([]); setSearchInfo(null); setError('') }}>＋ New search</button></section>
@@ -119,8 +114,8 @@ export default function JobFinder() {
           <SearchFormCard filters={filters} onChange={setFilters} onSearch={handleSearch} busy={running} sendEmail={sendEmail} onEmailChange={setSendEmail} />
           <JobResults jobs={jobs} loading={running} searchInfo={searchInfo} searchId={searchId} onRemoveJob={id => { setJobs(previous => previous.filter(job => job._id !== id)); setSearches(previous => previous.map(search => search._id === searchId ? { ...search, result_count: Math.max(0, (Number(search.result_count) || 0) - 1) } : search)) }} />
         </div>
-        <aside className="jf-history-panel"><div className="jf-history-heading"><div><p className="jf-eyebrow">Your searches</p><h2>Recent finder runs</h2></div></div>
-          {searches.length === 0 ? <p className="jf-history-empty">Confirmed searches will appear here.</p> : <div className="jf-history-list">{searches.map(search => <button key={search._id} className={`jf-history-item ${search._id === searchId ? 'active' : ''}`} onClick={() => openSearch(search)}>
+        <aside className="jf-history-panel"><div className="jf-history-heading"><div><p className="jf-eyebrow">Your searches</p><h2>Recent finder runs</h2></div><button className="jf-history-mobile-toggle" type="button" aria-expanded={historyOpen} aria-controls="jf-recent-runs" onClick={() => setHistoryOpen(open => !open)}><span>Recent finder runs</span><span className="jf-history-count">{searches.length}</span><span className="jf-history-chevron" aria-hidden="true">⌄</span></button></div>
+          {searches.length === 0 ? <p id="jf-recent-runs" className="jf-history-empty" hidden={!historyOpen}>Confirmed searches will appear here.</p> : <div id="jf-recent-runs" className="jf-history-list" hidden={!historyOpen}>{searches.map(search => <button key={search._id} className={`jf-history-item ${search._id === searchId ? 'active' : ''}`} onClick={() => openSearch(search)}>
             <strong>{formatSearchList(search.filters?.job_titles, 'Untitled search')}</strong><span>{formatSearchList(search.filters?.locations, 'Any location')}</span><small>{Number(search.result_count) || 0} results · {search.status || 'draft'}</small>
           </button>)}</div>}
           <div className="jf-provider-note"><strong>Sources</strong><p>Google Jobs via SerpApi, with JSearch as a fallback. Firecrawl may enrich a limited number of incomplete descriptions.</p></div>

@@ -3,13 +3,69 @@
 @media(max-width:1020px){.jf-layout{grid-template-columns:1fr}.jf-history-panel{position:static;order:-1}.jf-history-list{flex-direction:row;max-height:none;overflow:auto}.jf-history-item{min-width:170px}.jf-provider-note{display:none}}
 @media(max-width:650px){.jf-nav-inner{padding:0 14px}.jf-nav nav{gap:0}.jf-nav nav button{padding:8px 6px;font-size:11px}.jf-brand{font-size:18px}.jf-brand span{display:none}.jf-main{padding:27px 14px 50px}.jf-hero{align-items:flex-start;flex-direction:column}.jf-new-search{align-self:flex-end}.jf-panel{padding:16px}.jf-panel-heading{flex-direction:column}.jf-form-grid{grid-template-columns:1fr}.jf-run-row{align-items:stretch;flex-direction:column}.jf-run-row .jf-primary{width:100%}.jf-message{max-width:96%}.jf-job-footer{align-items:flex-start;flex-direction:column}.jf-results-heading{align-items:flex-start;flex-direction:column}}
 
+@media(max-width:760px){
+  .jf-nav{height:auto;min-height:66px}
+  .jf-nav-inner{min-height:66px;height:auto;padding:8px 18px;gap:5px 10px;flex-wrap:wrap}
+  .jf-brand{flex:1;min-width:0;text-align:left}
+  .jf-nav nav{order:2;flex:0 0 100%;justify-content:center;flex-wrap:wrap;border-top:1px solid var(--hairline);padding-top:5px}
+  .jf-nav nav button{min-height:38px;padding:8px 10px}
+  .jf-main{padding-top:30px}
+}
+@media(max-width:420px){
+  .jf-nav nav{justify-content:space-between;gap:2px}
+  .jf-nav nav button{padding:8px 6px;font-size:10px}
+  .jf-main{padding-inline:12px}
+  .jf-hero h1{font-size:34px}
+  .jf-panel{padding:14px}
+  .jf-history-panel{padding:14px}
+  .jf-history-list{margin-inline:-14px;padding:0 14px 5px;scroll-snap-type:x proximity;-webkit-overflow-scrolling:touch}
+  .jf-history-item{scroll-snap-align:start;min-width:75vw;max-width:280px;white-space:normal;overflow-wrap:anywhere}
+  .jf-chat-form{align-items:stretch}
+  .jf-chat-form textarea{min-width:0}
+  .jf-send{padding-inline:12px}
+}
+
+/* Recent searches become a compact disclosure on phones. */
+@media(max-width:650px){
+  .jf-history-panel{width:100%;padding:10px 12px}
+  .jf-history-heading{align-items:center}
+  .jf-history-heading>div{display:none}
+  .jf-history-mobile-toggle{display:flex;align-items:center;gap:8px;width:100%;min-width:0;min-height:44px;padding:8px 11px;border:1px solid var(--hairline);border-radius:999px;background:var(--surface-card);color:var(--body-strong);text-align:left;font-size:clamp(12px,3.5vw,13px);font-weight:700;white-space:nowrap;overflow:hidden;cursor:pointer}
+  .jf-history-mobile-toggle>span:first-child{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .jf-history-count{display:grid;place-items:center;flex:0 0 auto;min-width:22px;height:22px;padding:0 6px;border-radius:999px;background:var(--surface-soft);color:var(--primary-active);font-size:11px;white-space:nowrap}
+  .jf-history-chevron{flex:0 0 auto;margin-left:auto;color:var(--primary-active);font-size:17px;line-height:1;transition:transform .18s ease}
+  .jf-history-mobile-toggle[aria-expanded="true"] .jf-history-chevron{transform:rotate(180deg)}
+  .jf-history-list[hidden],.jf-history-empty[hidden]{display:none}
+  .jf-history-list{display:flex;flex-direction:column;gap:8px;max-height:none;overflow:visible;margin:10px 0 0;padding:0}
+  .jf-history-item{width:100%;min-width:0;max-width:none;min-height:60px;flex:0 0 auto;padding:12px 13px;scroll-snap-align:none;white-space:normal;overflow-wrap:anywhere}
+  .jf-history-item strong,.jf-history-item span,.jf-history-item small{max-width:100%;line-height:1.4;overflow-wrap:anywhere}
+}
+
 
 .jf-delete-job{width:42px;height:42px;border:1px solid #ded8d1;border-radius:12px;background:transparent;color:#817b73;cursor:pointer;display:grid;place-items:center}.jf-delete-job svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}.jf-delete-job:hover:not(:disabled){border-color:#c8795d;color:#a34d39}.jf-delete-job:disabled{opacity:.5;cursor:wait}
+.jf-history-mobile-toggle{display:none}
+.jf-history-list[hidden]{display:flex}
+.jf-history-empty[hidden]{display:block}
 .jf-job-card{background:transparent;border:0;border-bottom:1px solid #d9d3cb;border-radius:0;padding:22px 4px}
 .jf-job-heading{align-items:center}
 .jf-job-title-block{display:flex;align-items:center;gap:10px 12px;flex-wrap:wrap;min-width:0}
 .jf-job-title-block h3{flex-basis:100%}
 .jf-ai-score{display:inline-flex;padding:5px 12px;border-radius:999px;background:#fff0ed;color:#a83535;font-size:12px;font-weight:700}
+
+/* Keep the phone history disclosure compact while its opened list uses the full column. */
+@media(max-width:650px){
+  .jf-history-panel{width:100%;padding:0;background:transparent;border:0}
+  .jf-history-heading{justify-content:flex-start}
+  .jf-history-mobile-toggle{display:inline-flex;align-items:center;gap:9px;width:max-content;max-width:100%;min-width:0;min-height:42px;padding:10px 15px;border:1px solid #e6dfd8;border-radius:9px;background:#fff;color:#3d3d3a;text-align:left;font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;cursor:pointer}
+  .jf-history-mobile-toggle>span:first-child{flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .jf-history-count{display:grid;place-items:center;flex:0 0 auto;min-width:22px;height:22px;padding:0 6px;border-radius:999px;background:var(--surface-soft);color:var(--primary-active);font-size:11px;white-space:nowrap}
+  .jf-history-chevron{flex:0 0 auto;margin-left:auto;color:var(--primary-active);font-size:17px;line-height:1;transition:transform .18s ease}
+  .jf-history-mobile-toggle[aria-expanded="true"] .jf-history-chevron{transform:rotate(180deg)}
+  .jf-history-list[hidden],.jf-history-empty[hidden]{display:none}
+  .jf-history-list{display:flex;flex-direction:column;gap:8px;max-height:none;overflow:visible;margin:10px 0 0;padding:0}
+  .jf-history-item{width:100%;min-width:0;max-width:none;min-height:60px;flex:0 0 auto;padding:12px 13px;scroll-snap-align:none;white-space:normal;overflow-wrap:anywhere}
+  .jf-history-item strong,.jf-history-item span,.jf-history-item small{max-width:100%;line-height:1.4;overflow-wrap:anywhere}
+}
 .jf-job-title-block p{display:flex;gap:14px;flex-wrap:wrap}
 .jf-job-actions{display:flex;align-items:center;gap:24px;flex-shrink:0}
 .jf-score-wrap{display:flex;flex-direction:column;align-items:center;gap:7px;color:#b64242;font-size:12px;font-weight:700;white-space:nowrap}

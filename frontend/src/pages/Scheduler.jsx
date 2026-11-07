@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
-import { signOut } from 'firebase/auth'
 import { useNavigate } from 'react-router-dom'
 import { auth } from '../firebase'
+import AppNavigation from '../components/AppNavigation'
 import SchedulerSection from '../components/job-finder/SchedulerSection'
 import { getSearches, getSearchSchedule, saveSearchSchedule, runSavedSearchNow, getSearchResults, deleteSavedSearch } from '../services/jobFinderService'
 import './scheduler.css'
@@ -106,13 +106,8 @@ export default function Scheduler() {
     } finally { setDeletingId(null) }
   }
 
-  async function handleSignOut() { await signOut(auth); navigate('/login') }
-
   return <div className="jf-root scheduler-page">
-    <header className="jf-nav"><div className="jf-nav-inner">
-      <button className="jf-brand" onClick={() => navigate('/job-finder')}>PingScore<span>Scheduler</span></button>
-      <nav><button onClick={() => navigate('/job-finder')}>Job Finder</button><button onClick={() => navigate('/history')}>Search history</button><button onClick={() => navigate('/profile')}>{auth.currentUser?.displayName || 'Profile'}</button><button className="jf-logout" onClick={handleSignOut}>Sign out</button></nav>
-    </div></header>
+    <AppNavigation brand={<>PingScore<span className="app-navigation-brand-subtitle">Scheduler</span></>} />
     <main className="jf-main">
       <section className="jf-hero"><div><p className="jf-eyebrow">Automation</p><h1>Manage your <em>job schedules.</em></h1><p>Choose which saved searches run daily, when they run, and whether new matches are emailed to you.</p></div></section>
       {error && <div className="jf-error" role="alert">{error}</div>}

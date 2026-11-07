@@ -22,3 +22,29 @@
 .jf-save-saved{background:#567348}.jf-save-saved:hover:not(:disabled){background:#45613a}.jf-save-error{background:#b64242}.jf-save-error:hover:not(:disabled){background:#963333}.jf-save-error-message{margin:0;color:#a33d31;font-size:11px}.jf-schedule-pause:disabled{opacity:.55;cursor:not-allowed}
 .jf-delete-search{margin-left:auto;border:1px solid #b64242;border-radius:9px;background:#fff;color:#a33d31;padding:10px 15px;font-weight:600;cursor:pointer}.jf-delete-search:hover:not(:disabled){background:#fff3f1}.jf-delete-search:disabled{opacity:.55;cursor:not-allowed}.jf-delete-error-message{margin:0;color:#a33d31;font-size:11px}
 @media(max-width:650px){.jf-schedule-fields{grid-template-columns:1fr}.jf-scheduler-footer{align-items:flex-start;flex-direction:column}}
+
+.jf-scheduler-section,.jf-scheduler-section>*{min-width:0}
+.jf-scheduler-section h2,.jf-scheduler-meta span,.jf-scheduler-email strong,.jf-scheduled-results a strong,.jf-scheduled-results a span,.jf-scheduler-message,.jf-scheduler-error span{overflow-wrap:anywhere;word-break:break-word}
+.jf-scheduler-actions{flex-wrap:wrap}
+@media(max-width:760px){
+  .scheduler-page .jf-main{padding:30px 18px 56px}
+  .jf-scheduler-section .jf-panel-heading{align-items:flex-start}
+  .jf-scheduler-status{flex:0 0 auto}
+  .jf-scheduler-actions>*{flex:1 1 180px;min-height:44px}
+  .jf-scheduler-meta p{align-items:flex-start}
+  .jf-scheduler-meta p span{max-width:65%}
+}
+@media(max-width:420px){
+  .scheduler-page .jf-main{padding:24px 12px 50px}
+  .jf-scheduler-section{padding:14px}
+  .jf-scheduler-section .jf-panel-heading{gap:8px}
+  .jf-scheduler-section .jf-panel-heading h2{font-size:21px;overflow-wrap:anywhere}
+  .jf-scheduler-meta{padding:10px}
+  .jf-scheduler-meta p{flex-direction:column;gap:2px}
+  .jf-scheduler-meta p span{max-width:100%;text-align:left}
+  .jf-scheduler-actions{flex-direction:column}
+  .jf-scheduler-actions>*{width:100%;flex:auto}
+  .jf-delete-search{margin-left:0}
+  .jf-scheduled-results a{align-items:flex-start;flex-direction:column}
+  .jf-toast{left:12px;right:12px;top:12px;text-align:center}
+}

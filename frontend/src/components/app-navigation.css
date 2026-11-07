@@ -1,0 +1,40 @@
+.app-navigation{height:66px;background:var(--canvas);border-bottom:1px solid var(--hairline);position:sticky;top:0;z-index:20;color:var(--body-strong);font-family:var(--sans)}
+.app-navigation-inner{position:relative;max-width:1440px;height:100%;margin:0 auto;padding:0 34px;display:flex;align-items:center;justify-content:space-between;gap:14px}
+.app-navigation-brand{flex:0 0 auto;border:0;background:transparent;color:var(--ink);font-family:var(--display);font-size:23px;cursor:pointer}
+.app-navigation-brand-subtitle{font:500 12px var(--sans);color:var(--primary-active);margin-left:10px}
+.app-navigation-desktop{display:flex;align-items:center;gap:8px}
+.app-navigation-link-group{display:contents}
+.app-navigation-desktop button,.app-navigation-mobile button{border:0;background:transparent;color:var(--muted);padding:9px 12px;border-radius:8px;font:500 13px var(--sans);cursor:pointer;text-align:left}
+.app-navigation-desktop button:hover,.app-navigation-desktop button[aria-current="page"],.app-navigation-mobile button:hover,.app-navigation-mobile button[aria-current="page"]{background:var(--surface-soft);color:var(--ink)}
+.app-navigation-desktop .app-navigation-signout,.app-navigation-mobile .app-navigation-signout{color:var(--primary-active)}
+.app-navigation-toggle,.app-navigation-mobile{display:none}
+.app-navigation-left,.app-navigation-right{display:flex;align-items:center;flex:0 0 auto}
+.app-navigation-history{height:auto;min-height:68px;background:var(--canvas,#faf9f5);border-color:var(--hairline,#e6dfd8);font-family:var(--sans,Inter,sans-serif)}
+.app-navigation-history .app-navigation-inner{max-width:1160px;padding:0 32px;gap:16px}
+.app-navigation-history .app-navigation-brand{font-family:var(--display,Georgia,serif);font-size:25px;color:var(--ink,#141413)}
+.app-navigation-history .app-navigation-desktop button{color:var(--muted,#5c5b56);font-size:12px;font-weight:600;padding:9px 10px}
+.app-navigation-history .app-navigation-desktop button:hover,.app-navigation-history .app-navigation-desktop button[aria-current="page"]{background:var(--surface-soft,#f1ece4);color:var(--ink,#141413)}
+@media(max-width:767px){
+  .app-navigation{height:66px}
+  .app-navigation-inner{padding:0 14px;gap:8px}
+  .app-navigation-brand{font-size:20px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:left}
+  .app-navigation-brand-subtitle{display:none}
+  .app-navigation-desktop{display:none}
+  .app-navigation-toggle{display:grid;place-items:center;flex:0 0 42px;width:42px;height:42px;border:1px solid var(--hairline);border-radius:9px;background:var(--surface-card);color:var(--ink);cursor:pointer}
+  .app-navigation-toggle:hover{background:var(--surface-soft)}
+  .app-navigation-toggle:focus-visible,.app-navigation-mobile button:focus-visible{outline:3px solid var(--primary);outline-offset:2px}
+  .app-navigation-toggle svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+  .app-navigation-mobile:not([hidden]){position:absolute;top:calc(100% + 7px);right:14px;display:flex;flex-direction:column;align-items:stretch;width:min(300px,calc(100vw - 28px));padding:9px;border:1px solid var(--hairline);border-radius:12px;background:var(--surface-card);box-shadow:0 12px 32px color-mix(in srgb,var(--ink) 14%,transparent)}
+  .app-navigation-mobile button{min-height:44px;padding:11px 12px;font-size:14px}
+  .app-navigation-mobile .app-navigation-link-group{display:flex;flex-direction:column;align-items:stretch}
+  .app-navigation-mobile .app-navigation-profile{font-weight:700}
+  .app-navigation-mobile .app-navigation-signout{border-top:1px solid var(--hairline);border-radius:0;margin-top:4px;padding-top:13px}
+  .app-navigation-user-email{padding:0 12px 9px;color:var(--muted);font-size:12px;overflow-wrap:anywhere}
+  .app-navigation-history{height:68px;min-height:68px}
+  .app-navigation-history .app-navigation-inner{height:100%;min-height:0;padding:0 14px;gap:8px}
+  .app-navigation-history .app-navigation-left{display:none}
+  .app-navigation-history .app-navigation-brand{flex:1;font-size:20px;order:0}
+  .app-navigation-history .app-navigation-right{order:1}
+  .app-navigation-history .app-navigation-right button{padding:8px 10px!important;font-size:12px!important;white-space:nowrap}
+  .app-navigation-history .app-navigation-toggle{order:2}
+}
