@@ -36,7 +36,16 @@ export default function SchedulerSection({ searchId, searchLabel, filters, sched
       <div className="jf-scheduler-meta"><p><strong>Next run</strong><span>{active ? readableDate(schedule.next_run) : 'Paused'}</span></p><p><strong>Last run</strong><span>{schedule.last_run ? `${readableDate(schedule.last_run)}${result ? `, ${result}` : ''}` : 'No scheduled run yet'}</span></p>{schedule.last_error && <p className="jf-scheduler-error"><strong>Last error</strong><span>{schedule.last_error}</span></p>}</div>
       {schedule.email_enabled === false && runJobs.length > 0 && <div className="jf-scheduled-results"><h3>New matches</h3>{runJobs.map((job, index) => <a key={job.dedupe_key || job.apply_link || index} href={job.apply_link} target="_blank" rel="noreferrer"><strong>{job.job_title}</strong><span>{[job.company, job.location].filter(Boolean).join(' · ')}</span></a>)}</div>}
       {runMessage && <p className="jf-scheduler-message" role="status">{runMessage}</p>}
-      <div className="jf-scheduler-actions"><button className={`jf-primary jf-save-${saveState}`} onClick={onSave} disabled={saveState === 'saving' || !(filters?.job_titles || []).length}>{saveState === 'saving' ? 'Saving...' : saveState === 'saved' ? 'Schedule saved ✓' : saveState === 'error' ? 'Failed, try again' : 'Save schedule'}</button><button className="jf-schedule-pause" onClick={onRunNow} disabled={running}>{running ? 'Sending...' : 'Send test now'}</button><button className="jf-delete-search" onClick={onDelete} disabled={deleting}>{deleting ? 'Deleting...' : 'Delete saved search'}</button></div>
+      <div className="jf-scheduler-actions">
+        <div className="jf-scheduler-main-actions">
+          <button className={`jf-primary jf-save-${saveState}`} onClick={onSave} disabled={saveState === 'saving' || !(filters?.job_titles || []).length}>{saveState === 'saving' ? 'Saving...' : saveState === 'saved' ? 'Schedule saved ✓' : saveState === 'error' ? 'Failed, try again' : 'Save schedule'}</button>
+          <button className="jf-schedule-pause" onClick={onRunNow} disabled={running}>{running ? 'Sending...' : 'Send test now'}</button>
+        </div>
+        <button className="jf-delete-search" onClick={onDelete} disabled={deleting}>
+          <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 7h16M10 11v6m4-6v6M5 7l1 13h12l1-13M9 7V4h6v3" /></svg>
+          {deleting ? 'Deleting...' : 'Delete saved search'}
+        </button>
+      </div>
       {saveError && <p className="jf-save-error-message" role="alert">{saveError}</p>}
       {deleteError && <p className="jf-delete-error-message" role="alert">{deleteError}</p>}
     </>}

@@ -7,8 +7,8 @@ import api from '../api'
 const features = [
   'Finds matching jobs daily from top job boards',
   'AI scores and ranks best matches for your profile',
-  'Sends results to your WhatsApp automatically',
-  'Generates cover letters for each job',
+  'Sends results to your Email automatically',
+  'Generates Resume scores  for each job',
 ]
 
 export default function Login() {

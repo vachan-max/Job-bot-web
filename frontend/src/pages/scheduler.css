@@ -34,6 +34,20 @@
   .jf-scheduler-meta p{align-items:flex-start}
   .jf-scheduler-meta p span{max-width:65%}
 }
+
+/* Keep the main actions together and the destructive action visually separate. */
+.jf-scheduler-actions{display:flex;flex-direction:column;align-items:flex-start;gap:14px;flex-wrap:nowrap}
+.jf-scheduler-main-actions{display:flex;gap:8px;width:100%}
+.jf-scheduler-main-actions>*{flex:1;min-height:44px}
+.jf-schedule-pause{min-height:44px}
+.jf-delete-search{display:inline-flex;align-items:center;gap:7px;min-height:44px;margin-left:0;padding:8px 2px;border:0;border-radius:7px;background:transparent;color:#a33d31;font-weight:600;font-size:12px;cursor:pointer}
+.jf-delete-search svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.jf-delete-search:hover:not(:disabled){color:#812b23;text-decoration:underline}
+.jf-delete-search:focus-visible{outline:2px solid #b64242;outline-offset:3px}
+@media(max-width:650px){
+  .jf-scheduler-main-actions{flex-direction:column}
+  .jf-scheduler-main-actions>*{width:100%;flex:auto;min-height:44px}
+}
 @media(max-width:420px){
   .scheduler-page .jf-main{padding:24px 12px 50px}
   .jf-scheduler-section{padding:14px}
