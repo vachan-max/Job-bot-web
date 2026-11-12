@@ -1,0 +1,23 @@
+.usage-page{min-height:100vh;background:var(--canvas);color:var(--body-strong)}
+.usage-main{width:min(1160px,100%);margin:0 auto;padding:clamp(28px,5vw,58px) clamp(16px,4vw,32px) 72px}
+.usage-header{margin-bottom:30px}
+.usage-eyebrow{margin-bottom:8px;color:var(--primary-active);font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase}
+.usage-header h1{margin:0;color:var(--ink);font:500 clamp(34px,5vw,46px)/1.05 var(--display);letter-spacing:-.04em}
+.usage-header>p{margin:10px 0 0;color:var(--muted);font-size:14px}
+.usage-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr));gap:16px}
+.usage-card{min-width:0;padding:22px;border:1px solid var(--hairline);border-radius:12px;background:var(--surface-card)}
+.usage-card-heading{display:flex;align-items:center;gap:12px;margin-bottom:22px}
+.usage-service-mark{display:grid;flex:0 0 42px;width:42px;height:42px;place-items:center;border-radius:10px;background:var(--surface-strong);color:var(--primary-active);font-size:16px;font-weight:700}
+.usage-card-heading h2{margin:0;color:var(--ink);font:500 23px/1.1 var(--display);overflow-wrap:anywhere}
+.usage-card-heading p{margin:4px 0 0;color:var(--muted);font-size:12px}
+.usage-meter+.usage-meter{margin-top:20px}
+.usage-meter-heading{display:flex;justify-content:space-between;align-items:baseline;gap:12px;color:var(--body-strong);font-size:13px}
+.usage-meter-heading strong{font-size:13px;white-space:nowrap}
+.usage-meter-heading strong span{color:var(--muted);font-weight:500}
+.usage-meter-track{height:8px;margin-top:9px;overflow:hidden;border-radius:999px;background:var(--surface-strong)}
+.usage-meter-fill{height:100%;border-radius:inherit;background:var(--primary);transition:width .25s ease}
+.usage-meter-fill.is-near-limit{background:var(--error)}
+.usage-meter>p{margin:6px 0 0;color:var(--muted);font-size:11px}
+.usage-state,.usage-error{padding:22px;border:1px solid var(--hairline);border-radius:12px;background:var(--surface-card);color:var(--muted);font-size:14px}
+.usage-error{border-color:color-mix(in srgb,var(--error) 35%,var(--hairline));color:var(--error)}
+@media(max-width:480px){.usage-main{padding-top:28px}.usage-card{padding:18px}.usage-grid{grid-template-columns:minmax(0,1fr)}}

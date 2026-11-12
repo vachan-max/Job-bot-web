@@ -7,6 +7,7 @@ import Profile   from './pages/Profile'
 import History   from './pages/History'
 import JobFinder from './pages/JobFinder'
 import Scheduler from './pages/Scheduler'
+import Usage from './pages/Usage'
 
 function ThemeToggle() {
   const [theme, setTheme] = useState(() => localStorage.getItem('pingscore-theme') || 'light')
@@ -112,6 +113,7 @@ export default function App() {
         <Route path="/dashboard" element={<PrivateRoute><Navigate to="/job-finder" replace /></PrivateRoute>} />
         <Route path="/profile"   element={<PrivateRoute><Profile /></PrivateRoute>} />
         <Route path="/history"   element={<PrivateRoute><History /></PrivateRoute>} />
+        <Route path="/usage"     element={<PrivateRoute><Usage /></PrivateRoute>} />
         <Route path="/scheduler" element={<PrivateRoute><Scheduler /></PrivateRoute>} />
         <Route path="/job-finder" element={<PrivateRoute><JobFinder /></PrivateRoute>} />
         <Route path="*"          element={<Navigate to="/job-finder" />} />

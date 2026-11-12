@@ -8,6 +8,7 @@ const links = [
   { label: 'Job Finder', path: '/job-finder' },
   { label: 'Scheduler', path: '/scheduler' },
   { label: 'Search history', path: '/history' },
+  { label: 'Usage', path: '/usage' },
   { label: 'Profile', path: '/profile', profile: true },
 ]
 
